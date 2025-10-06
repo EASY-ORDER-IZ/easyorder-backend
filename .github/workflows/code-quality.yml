@@ -1,0 +1,49 @@
+name: Code Quality Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "**.ts"
+      - "**.js"
+      - "**.json"
+      - ".prettierrc"
+      - ".prettierignore"
+      - "eslint.config.ts"
+      - ".github/workflows/code-quality.yml"
+
+  push:
+    branches:
+      - main
+    paths:
+      - "**.ts"
+      - "**.js"
+      - "**.json"
+      - ".prettierrc"
+      - ".prettierignore"
+      - "eslint.config.ts"
+      - ".github/workflows/code-quality.yml"
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check Prettier formatting
+        run: npx prettier --check .

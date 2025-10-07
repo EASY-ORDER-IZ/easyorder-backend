@@ -43,6 +43,8 @@ export default [
       "@typescript-eslint/explicit-module-boundary-types": "warn",
 
       "@typescript-eslint/no-floating-promises": "error",
+      // "@typescript-eslint/strict-boolean-expressions": "error",
+
       "@typescript-eslint/no-misused-promises": "error",
       "@typescript-eslint/strict-boolean-expressions": "warn",
 
@@ -57,7 +59,6 @@ export default [
         },
       ],
       "import/no-duplicates": "error",
-      "import/newline-after-import": "error",
     },
   },
 ];

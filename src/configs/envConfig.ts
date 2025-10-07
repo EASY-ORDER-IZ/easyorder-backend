@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
-
 import logger from "./logger";
+
 const node_env = process.env.NODE_ENV ?? "dev";
 
 dotenv.config({
@@ -29,7 +29,5 @@ export const env = {
   POSTGRES_USER: required("POSTGRES_USER"),
   POSTGRES_PASSWORD: required("POSTGRES_PASSWORD"),
   POSTGRES_DB: required("POSTGRES_DB"),
-  DATABASE_URL: required("DATABASE_URL"),
-  DB_USERNAME: required("DB_USERNAME"),
   JWT_SECRET: required("JWT_SECRET"),
 };

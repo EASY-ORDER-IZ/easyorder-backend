@@ -8,7 +8,7 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "build": "npm run clean && tsc",
     "start": "node dist/server.js",
-    "dev": "cross-env NODE_ENV=development nodemon --watch src --ext ts --exec ts-node src/server.ts",
+    "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
     "start:dev": "npm run build && cross-env NODE_ENV=dev npm run dev",
     "start:test": "npm run build && cross-env NODE_ENV=test npm run dev",
     "start:prod": "npm run build && cross-env NODE_ENV=prod npm run dev",
@@ -46,6 +46,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.44.1",
     "@typescript-eslint/parser": "^8.44.1",
     "cors": "^2.8.5",
@@ -58,6 +59,7 @@
     "morgan": "^1.10.1",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
+    "supertest": "^7.1.4",
     "typeorm": "^0.3.27",
     "winston": "^3.18.3"
   }

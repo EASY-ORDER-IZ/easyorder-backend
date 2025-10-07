@@ -3,7 +3,7 @@ import app from "./app";
 import logger from "./configs/logger";
 import { initializeApp } from ".";
 
-const startServer = async () => {
+const startServer = async (): Promise<void> => {
   await initializeApp();
   const PORT = env.PORT || 3000;
 
@@ -12,4 +12,7 @@ const startServer = async () => {
   });
 };
 
-startServer();
+startServer().catch((err) => {
+  logger.error("Failed to start server", err);
+  process.exit(1);
+});

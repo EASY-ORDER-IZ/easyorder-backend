@@ -8,6 +8,7 @@ import {
   JoinColumn,
   Index,
 } from "typeorm";
+
 import { User } from "./User";
 import { Tenant } from "./Tenant";
 

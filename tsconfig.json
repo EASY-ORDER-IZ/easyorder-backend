@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "rootDir": "./src",
     "outDir": "./dist",
     "target": "ES2020",
     "module": "CommonJS",
@@ -10,5 +9,5 @@
     "experimentalDecorators": true
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist", "**.config.ts", "tests/**" ]
+  "exclude": ["node_modules", "dist", "**.config.ts"]
 }

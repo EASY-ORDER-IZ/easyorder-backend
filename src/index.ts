@@ -1,11 +1,14 @@
 import { AppDataSource } from "./configs/database";
+import logger from "./configs/logger";
 
 export const initializeApp = async () => {
   try {
+    
     await AppDataSource.initialize();
-    console.log("Database connected successfully!");
+    logger.info("Database connected successfully!");
   } catch (err) {
-    console.error("Database initialization failed:", err);
+    
+    logger.error("Database initialization failed:", err);
     process.exit(1);
   }
 };

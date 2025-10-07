@@ -10,5 +10,5 @@
     "experimentalDecorators": true
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist", "**.config.ts"]
+  "exclude": ["node_modules", "dist", "**.config.ts", "tests/**" ]
 }

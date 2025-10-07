@@ -1,14 +1,14 @@
+import { env } from "./configs/envConfig";
 import app from "./app";
-import dotenv from "dotenv";
-import { initializeApp } from "./index";
-
-const PORT = process.env.PORT || 3000;
+import logger from "./configs/logger";
+import { initializeApp } from ".";
 
 const startServer = async () => {
   await initializeApp();
+  const PORT = env.PORT || 3000;
 
   app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    logger.info(`Server is running on port ${PORT}`);
   });
 };
 

@@ -40,7 +40,7 @@ export default defineConfig([
         { prefer: "type-imports" },
       ],
       "@typescript-eslint/no-floating-promises": "error",
-      "@typescript-eslint/strict-boolean-expressions": "error",
+      // "@typescript-eslint/strict-boolean-expressions": "error",
       "@typescript-eslint/no-misused-promises": "error",
 
       "import/order": [

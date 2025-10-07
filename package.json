@@ -55,8 +55,8 @@
     "morgan": "^1.10.1",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
-    "superset": "^2.0.1",
-    "typeorm": "^0.3.27",git 
+    "supertest": "^7.1.4",
+    "typeorm": "^0.3.27",
     "winston": "^3.18.3"
   }
 }

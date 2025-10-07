@@ -29,6 +29,5 @@ export const env = {
   POSTGRES_USER: required("POSTGRES_USER"),
   POSTGRES_PASSWORD: required("POSTGRES_PASSWORD"),
   POSTGRES_DB: required("POSTGRES_DB"),
-  DB_USERNAME: required("DB_USERNAME"),
   JWT_SECRET: required("JWT_SECRET"),
 };

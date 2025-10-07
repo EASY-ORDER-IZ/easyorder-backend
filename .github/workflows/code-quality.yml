@@ -3,10 +3,26 @@ name: Code Quality Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+      - "**.ts"
+      - "**.js"
+      - "**.json"
+      - ".prettierrc"
+      - ".prettierignore"
+      - "eslint.config.ts"
+      - ".github/workflows/code-quality.yml"
 
   push:
     branches:
       - main
+    paths:
+      - "**.ts"
+      - "**.js"
+      - "**.json"
+      - ".prettierrc"
+      - ".prettierignore"
+      - "eslint.config.ts"
+      - ".github/workflows/code-quality.yml"
 
 jobs:
   code-quality:

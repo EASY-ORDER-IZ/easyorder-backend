@@ -24,7 +24,7 @@ export default [
       "no-var": "error",
       curly: "warn",
       eqeqeq: "warn",
-      //"no-console": "warn",
+      "no-console": "warn",
 
       "@typescript-eslint/no-unused-vars": [
         "error",

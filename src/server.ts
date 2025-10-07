@@ -4,7 +4,7 @@ import logger from "./configs/logger";
 import { initializeApp } from ".";
 
 
-const startServer = async () => {
+const startServer = async () : Promise<void> => {
   await initializeApp();
   const PORT = env.PORT || 3000;
 

@@ -19,7 +19,7 @@ const consoleTransport = new winston.transports.Console({
 });
 
 const logger = winston.createLogger({
-  level: node_env === "test" ? "error" : node_env == "dev" ? "debug" : "info",
+  level: node_env === "test" ? "error" : node_env === "dev" ? "debug" : "info",
   transports: [consoleTransport],
 });
 

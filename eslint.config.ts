@@ -59,7 +59,6 @@ export default [
         },
       ],
       "import/no-duplicates": "error",
-      "import/newline-after-import": "error",
     },
   },
 ];

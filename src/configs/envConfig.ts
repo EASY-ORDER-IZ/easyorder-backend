@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
-
 import logger from "./logger";
+
 const node_env = process.env.NODE_ENV ?? "dev";
 
 dotenv.config({

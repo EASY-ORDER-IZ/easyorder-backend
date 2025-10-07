@@ -2,8 +2,8 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
-import { notFoundHandler } from "./api/middlewares/notFoundHandler";
 
+import { notFoundHandler } from "./api/middlewares/notFoundHandler";
 import logger from "./configs/logger";
 
 const app = express();

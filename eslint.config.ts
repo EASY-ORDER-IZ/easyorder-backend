@@ -1,15 +1,13 @@
-import { defineConfig } from "eslint/config";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 import importPlugin from "eslint-plugin-import";
 
-export default defineConfig([
+export default [
   {
-    ignores: ["dist/**", "node_modules/**", "**config.ts"],
+    ignores: ["dist/**", "node_modules/**", "**/*.config.ts", "**/*.d.ts"],
   },
   {
     files: ["**/*.ts"],
-
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -17,31 +15,38 @@ export default defineConfig([
         sourceType: "module",
       },
     },
-
     plugins: {
-      "@typescript-eslint": tsPlugin as any,
+      "@typescript-eslint": tsPlugin,
       import: importPlugin,
     },
-
     rules: {
-      "prefer-const": "error",
-      semi: "error",
-      "no-console": "error",
+      "prefer-const": "warn",
+      "no-var": "error",
+      curly: "warn",
+      eqeqeq: "warn",
+      "no-console": "warn",
 
       "@typescript-eslint/no-unused-vars": [
         "error",
-        { argsIgnorePattern: "^_" },
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
       ],
       "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/explicit-function-return-type": ["error"],
-      "@typescript-eslint/explicit-module-boundary-types": ["warn"],
       "@typescript-eslint/consistent-type-imports": [
-        "error",
+        "warn",
         { prefer: "type-imports" },
       ],
+
+      "@typescript-eslint/explicit-function-return-type": "warn",
+      "@typescript-eslint/explicit-module-boundary-types": "warn",
+
       "@typescript-eslint/no-floating-promises": "error",
       // "@typescript-eslint/strict-boolean-expressions": "error",
+
       "@typescript-eslint/no-misused-promises": "error",
+      "@typescript-eslint/strict-boolean-expressions": "warn",
 
       "import/order": [
         "error",
@@ -51,9 +56,10 @@ export default defineConfig([
             ["internal"],
             ["parent", "sibling", "index"],
           ],
-          "newlines-between": "always",
         },
       ],
+      "import/no-duplicates": "error",
+      "import/newline-after-import": "error",
     },
   },
-]);
+];

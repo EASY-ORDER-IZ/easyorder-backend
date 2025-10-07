@@ -1,10 +1,11 @@
 import { env } from "./configs/envConfig";
 import app from "./app";
 import logger from "./configs/logger";
-// import { initializeApp } from "./index";
+import { initializeApp } from ".";
 
-const startServer = async (): Promise<void> => {
-  // await initializeApp();
+
+const startServer = async () => {
+  await initializeApp();
   const PORT = env.PORT || 3000;
 
   app.listen(PORT, () => {

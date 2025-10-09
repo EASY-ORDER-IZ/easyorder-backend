@@ -74,9 +74,9 @@ This workflow runs automatically on every pull request and push to `main` that a
 
 ### What It Does
 
-* ✅ Runs **ESLint** to enforce TypeScript coding standards
-* ✅ Runs **Prettier** to verify code formatting
-* ❌ Fails if lint or formatting errors are found
+- ✅ Runs **ESLint** to enforce TypeScript coding standards
+- ✅ Runs **Prettier** to verify code formatting
+- ❌ Fails if lint or formatting errors are found
 
 ### Run Locally Before Pushing
 
@@ -96,17 +96,17 @@ This workflow ensures all code changes compile successfully and that all unit te
 
 ### What It Does
 
-* 🧾 Checks out repository code
-* 🧰 Sets up Node.js (v20)
-* 📦 Installs dependencies using `npm ci`
-* 🏗️ Builds the project (`npm run build`)
-* 🧪 Runs Jest tests with coverage output to CI logs
-* ❌ Fails automatically if build or tests fail
+- 🧾 Checks out repository code
+- 🧰 Sets up Node.js (v20)
+- 📦 Installs dependencies using `npm ci`
+- 🏗️ Builds the project (`npm run build`)
+- 🧪 Runs Jest tests with coverage output to CI logs
+- ❌ Fails automatically if build or tests fail
 
 ### Triggered On
 
-* Every pull request that modifies backend code
-* Every push to the `main` branch
+- Every pull request that modifies backend code
+- Every push to the `main` branch
 
 ### Run Locally Before Opening a PR
 
@@ -128,3 +128,4 @@ These workflows ensure only **clean, tested, and properly formatted code** is me
 
 ```
 
+```

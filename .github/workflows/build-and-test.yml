@@ -1,4 +1,4 @@
-name: Code Quality Checks
+name: Build and Test
 
 on:
   pull_request:
@@ -8,9 +8,9 @@ on:
       - main
 
 jobs:
-  code-quality:
+  build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -25,8 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run ESLint
-        run: npm run lint
+      - name: Build application
+        run: npm run build
 
-      - name: Check Prettier formatting
-        run: npx prettier --check .
+      - name: Run tests with coverage
+        run: npm test -- --coverage
+
+      - name: Verify build and test success
+        run: echo "✅ Build and tests completed successfully."

@@ -3,24 +3,9 @@ name: Build and Test
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - "**.ts"
-      - "**.js"
-      - "package.json"
-      - "tsconfig.json"
-      - "jest.config.*"
-      - ".github/workflows/build-and-test.yml"
-
   push:
     branches:
       - main
-    paths:
-      - "**.ts"
-      - "**.js"
-      - "package.json"
-      - "tsconfig.json"
-      - "jest.config.*"
-      - ".github/workflows/build-and-test.yml"
 
 jobs:
   build-and-test:

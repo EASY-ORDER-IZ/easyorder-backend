@@ -22,7 +22,7 @@ services:
     volumes:
       - pg-dev-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev_user -d easyorder_dev"]
+      test: ["CMD-SHELL", "pg_isready -U postgres-dev -d easyorder_dev"]
       interval: 10s
       timeout: 5s
       retries: 5

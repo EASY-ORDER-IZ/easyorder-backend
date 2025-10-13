@@ -1,9 +1,10 @@
 import { DataSource } from "typeorm";
 
 import { env } from "./envConfig";
-import { Tenant } from "../entities/Tenant";
 import { User } from "../entities/User";
 import { UserRole } from "../entities/UserRole";
+import { Store } from "../entities/Store";
+import { OtpCode } from "../entities/OtpCode";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -13,6 +14,6 @@ export const AppDataSource = new DataSource({
   password: env.POSTGRES_PASSWORD,
   database: env.POSTGRES_DB,
   synchronize: false,
-  entities: [User, Tenant, UserRole],
-  migrations: ["src/database/migrations/*/.ts"],
+  entities: [User, UserRole, Store, OtpCode],
+  migrations: ["src/database/migrations/*.ts"],
 });

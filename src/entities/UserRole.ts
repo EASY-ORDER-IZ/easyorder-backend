@@ -4,13 +4,13 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
   ManyToOne,
   JoinColumn,
   Index,
 } from "typeorm";
 
 import { User } from "./User";
-import { Tenant } from "./Tenant";
 
 export enum Role {
   ADMIN = "admin",
@@ -18,16 +18,14 @@ export enum Role {
 }
 
 @Entity("user_roles")
-@Index(["userId", "tenantId"], { unique: true })
+@Index(["userId", "role"], { unique: true })
+@Index(["userId"])
 export class UserRole {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ type: "uuid" })
+  @Column({ type: "uuid", name: "user_id", nullable: false })
   userId!: string;
-
-  @Column({ type: "uuid" })
-  tenantId!: string;
 
   @Column({
     type: "enum",
@@ -35,17 +33,16 @@ export class UserRole {
   })
   role!: Role;
 
-  @CreateDateColumn()
+  @DeleteDateColumn({ name: "deleted_at" })
+  deletedAt?: Date;
+
+  @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 
   @ManyToOne(() => User, (user) => user.userRoles)
-  @JoinColumn({ name: "userId" })
+  @JoinColumn({ name: "user_id" })
   user!: User;
-
-  @ManyToOne(() => Tenant, (tenant) => tenant.userRoles)
-  @JoinColumn({ name: "tenantId" })
-  tenant!: Tenant;
 }

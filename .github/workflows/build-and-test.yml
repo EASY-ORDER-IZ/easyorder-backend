@@ -11,7 +11,15 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ${{ secrets.TEST_DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.TEST_DB_NAME }}
+        ports: 
+        - 5433:5432
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,6 +38,12 @@ jobs:
 
       - name: Run tests with coverage
         run: npm test -- --coverage
-
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5433
+          POSTGRES_USER: ${{ secrets.TEST_DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.TEST_DB_NAME }}
+          
       - name: Verify build and test success
         run: echo "✅ Build and tests completed successfully."

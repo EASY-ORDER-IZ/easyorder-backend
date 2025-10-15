@@ -9,11 +9,7 @@ import {
 } from "typeorm";
 
 import { User } from "./User";
-
-export enum OtpPurpose {
-  EMAIL_VERIFICATION = "email_verification",
-  PASSWORD_RESET = "password_reset",
-}
+import { OtpPurpose } from "../constants";
 
 @Entity("otp_codes")
 @Index(["userId"])

@@ -1,6 +1,7 @@
 import type { DataSource } from "typeorm";
-import { User, AccountStatus } from "../../src/entities/User";
+import { User } from "../../src/entities/User";
 import { Store } from "../../src/entities/Store";
+import { AccountStatus } from "../../src/constants";
 
 export class TestFixtures {
   constructor(private dataSource: DataSource) {}

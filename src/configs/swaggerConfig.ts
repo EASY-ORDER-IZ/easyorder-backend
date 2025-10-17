@@ -4,9 +4,7 @@ import type { Express } from "express";
 import { env } from "./envConfig";
 
 export const setupSwagger = (app: Express): void => {
-  const isDevOrTest = ["dev", "test"].includes(env.node_env);
-
-  if (!isDevOrTest) {
+  if (env.node_env !== "dev") {
     return;
   }
 
@@ -14,17 +12,13 @@ export const setupSwagger = (app: Express): void => {
     definition: {
       openapi: "3.0.0",
       info: {
-        // Swagger metadata
         title: "First Chance API",
         version: "1.0.0",
         description: "API documentation for the First Chance backend system",
       },
       servers: [
         {
-          url:
-            env.node_env === "dev"
-              ? `http://localhost:${env.PORT}`
-              : `https://api.FirstChance.com`,
+          url: `http://localhost:${env.PORT}`,
           description: env.node_env,
         },
       ],

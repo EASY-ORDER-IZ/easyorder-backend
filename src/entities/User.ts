@@ -6,39 +6,65 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   OneToMany,
+  OneToOne,
 } from "typeorm";
 
 import { UserRole } from "./UserRole";
+import { Store } from "./Store";
+import { OtpCode } from "./OtpCode";
+
+export enum AccountStatus {
+  ACTIVE = "active",
+  BLOCKED = "blocked",
+  SUSPENDED = "suspended",
+  PENDING = "pending",
+}
 
 @Entity("users")
 export class User {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ type: "varchar", length: 100 })
-  name!: string;
+  @Column({ type: "varchar", length: 20, nullable: false })
+  username!: string;
 
-  @Column({ type: "varchar", length: 255, unique: true })
+  @Column({ type: "varchar", length: 255, unique: true, nullable: false })
   email!: string;
 
-  @Column({ type: "varchar", length: 255 })
-  password!: string;
+  @Column({
+    type: "varchar",
+    length: 255,
+    nullable: false,
+    name: "password_hash",
+  })
+  passwordHash!: string;
 
-  @Column({ type: "varchar", length: 255, unique: true })
-  phone!: string;
+  @Column({ type: "timestamp", nullable: true, name: "email_verified" })
+  emailVerified?: Date;
 
-  @Column({ type: "varchar", length: 255 })
-  address!: string;
+  @Column({
+    type: "enum",
+    enum: AccountStatus,
+    default: AccountStatus.PENDING,
+    name: "account_status",
+  })
+  accountStatus!: AccountStatus;
 
-  @DeleteDateColumn()
+  @DeleteDateColumn({ name: "deleted_at" })
   deletedAt?: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 
   @OneToMany(() => UserRole, (userRole) => userRole.user)
   userRoles!: UserRole[];
+
+  @OneToOne(() => Store, (store) => store.owner)
+  store?: Store;
+
+  @OneToMany(() => OtpCode, (otpCode) => otpCode.user)
+  otpCodes!: OtpCode[];
 }

@@ -5,6 +5,7 @@ import morgan from "morgan";
 
 import { notFoundHandler } from "./api/middlewares/notFoundHandler";
 import logger from "./configs/logger";
+import { setupSwagger } from "./configs/swaggerConfig";
 
 const app = express();
 app.use(express.json());
@@ -12,6 +13,8 @@ app.use(cors());
 app.use(helmet());
 // ? app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
+
+setupSwagger(app);
 
 app.get("/health", (req, res) => {
   logger.info("Health check endpoint called");

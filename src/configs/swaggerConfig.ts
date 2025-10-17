@@ -14,6 +14,7 @@ export const setupSwagger = (app: Express): void => {
     definition: {
       openapi: "3.0.0",
       info: {
+        // Swagger metadata
         title: "First Chance API",
         version: "1.0.0",
         description: "API documentation for the First Chance backend system",

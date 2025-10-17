@@ -11,11 +11,7 @@ import {
 } from "typeorm";
 
 import { User } from "./User";
-
-export enum Role {
-  ADMIN = "admin",
-  CUSTOMER = "customer",
-}
+import { Role } from "../constants";
 
 @Entity("user_roles")
 @Index(["userId", "role"], { unique: true })

@@ -5,6 +5,7 @@ import morgan from "morgan";
 
 import { notFoundHandler } from "./api/middlewares/notFoundHandler";
 import logger from "./configs/logger";
+import v1Routes from "./api/v1/routes";
 
 const app = express();
 app.use(express.json());
@@ -21,6 +22,8 @@ app.get("/health", (req, res) => {
 
   res.send("Server is healthy");
 });
+
+app.use("/api/v1", v1Routes);
 
 app.use(notFoundHandler);
 

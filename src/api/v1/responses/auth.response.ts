@@ -11,6 +11,15 @@ export interface RegisterResponse {
   };
 }
 
+export interface VerifyOtpResponse {
+  data: {
+    userId: string;
+    email: string;
+    isVerified: boolean;
+    verifiedAt: string;
+  };
+}
+
 export interface ErrorResponse {
   error: {
     code: string;

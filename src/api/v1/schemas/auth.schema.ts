@@ -29,4 +29,16 @@ export const registerSchema = z.object({
   }),
 });
 
+export const verifyOtpSchema = z.object({
+  email: z
+    .string()
+    .email("Invalid email format")
+    .max(50, "Email must not exceed 50 characters"),
+
+  otpCode: z
+    .string()
+    .length(6, "OTP code must be exactly 6 characters")
+    .regex(/^\d+$/, "OTP code must contain only digits"),
+});
+
 export type RegisterSchemaType = z.infer<typeof registerSchema>;

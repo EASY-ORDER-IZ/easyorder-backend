@@ -6,3 +6,8 @@ export interface RegisterRequest {
   password: string;
   role: Role;
 }
+
+export interface VerifyOtpRequest {
+  email: string;
+  otpCode: string;
+}

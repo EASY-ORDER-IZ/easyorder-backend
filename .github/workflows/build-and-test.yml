@@ -44,6 +44,13 @@ jobs:
           POSTGRES_USER: ${{ secrets.TEST_DB_USER }}
           POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
           POSTGRES_DB: ${{ secrets.TEST_DB_NAME }}
+          # App configuration vars
+          PORT: 3000
+          NODE_ENV: test
+          JWT_SECRET: test-jwt-secret-for-ci-only 
+          #Not required
+          JWT_EXPIRES_IN: 1h 
+          JWT_REFRESH_EXPIRES_IN: 7d
           
       - name: Verify build and test success
         run: echo "✅ Build and tests completed successfully."

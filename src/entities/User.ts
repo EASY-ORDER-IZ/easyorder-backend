@@ -13,12 +13,7 @@ import { UserRole } from "./UserRole";
 import { Store } from "./Store";
 import { OtpCode } from "./OtpCode";
 
-export enum AccountStatus {
-  ACTIVE = "active",
-  BLOCKED = "blocked",
-  SUSPENDED = "suspended",
-  PENDING = "pending",
-}
+import { AccountStatus } from "../constants";
 
 @Entity("users")
 export class User {

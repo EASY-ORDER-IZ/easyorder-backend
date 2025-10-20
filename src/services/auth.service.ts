@@ -9,11 +9,13 @@ import { CustomError } from "../utils/custom-error";
 import type { Role } from "../constants";
 import { generateOtpCode, calculateOtpExpiry } from "../utils/otp-generator";
 import logger from "../configs/logger";
+import { EmailService } from "./email.service";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
   private userRoleRepository = AppDataSource.getRepository(UserRole);
   private otpRepository = AppDataSource.getRepository(OtpCode);
+  private emailService = new EmailService();
 
   async register(data: RegisterRequest): Promise<{
     userId: string;
@@ -52,7 +54,12 @@ export class AuthService {
       15
     );
 
-    logger.info(`[OTP Generated] User: ${email}, OTP: ${otpCode}`);
+    try {
+      await this.emailService.sendOtp(email, otpCode);
+      logger.info(`OTP email sent to ${email}`);
+    } catch (error) {
+      logger.error(`Failed to send email to ${email}:`, error);
+    }
 
     return {
       userId: savedUser.id,
@@ -73,7 +80,6 @@ export class AuthService {
     isVerified: boolean;
     verifiedAt: string;
   }> {
-    logger.info(`[OTP Verification Attempt] User: ${email}, OTP: ${otpCode}`);
     const user = await this.userRepository.findOneBy({ email });
     if (!user) {
       throw new CustomError("User not found", 404, "USER_NOT_FOUND");
@@ -90,7 +96,11 @@ export class AuthService {
     });
 
     if (!otp) {
-      throw new CustomError("Invalid OTP code", 400, "INVALID_OTP");
+      throw new CustomError(
+        "No OTP found. Please request a new one.",
+        400,
+        "OTP_NOT_FOUND"
+      );
     }
 
     if (otp.verifiedAt !== null) {
@@ -115,10 +125,15 @@ export class AuthService {
       );
     }
 
-    otp.attemptCount += 1;
-    await this.otpRepository.save(otp);
+    if (otp.otpCode !== otpCode) {
+      otp.attemptCount += 1;
+      await this.otpRepository.save(otp);
+
+      throw new CustomError("Invalid OTP code", 400, "INVALID_OTP");
+    }
 
     otp.verifiedAt = now;
+    otp.attemptCount += 1;
     await this.otpRepository.save(otp);
 
     user.emailVerified = now;

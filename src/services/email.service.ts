@@ -9,7 +9,6 @@ export class EmailService {
     },
     tls: {
       rejectUnauthorized: false,
-      minVersion: "TLSv1.2",
     },
   });
 

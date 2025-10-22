@@ -3,11 +3,12 @@ import { AppDataSource } from "../configs/database";
 import { User } from "../entities/User";
 import { UserRole } from "../entities/UserRole";
 import { OtpCode } from "../entities/OtpCode";
-import { AccountStatus, OtpPurpose } from "../constants";
+import { Store } from "../entities/Store";
+import { AccountStatus, OtpPurpose, Role } from "../constants";
 import type { RegisterRequest } from "../api/v1/requests/auth.request";
 import { CustomError } from "../utils/custom-error";
-import type { Role } from "../constants";
 import { generateOtpCode, calculateOtpExpiry } from "../utils/otp-generator";
+import { hashOtp, verifyOtp } from "../utils/otp-hasher";
 import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 
@@ -15,6 +16,7 @@ export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
   private userRoleRepository = AppDataSource.getRepository(UserRole);
   private otpRepository = AppDataSource.getRepository(OtpCode);
+  private storeRepository = AppDataSource.getRepository(Store);
   private emailService = new EmailService();
 
   async register(data: RegisterRequest): Promise<{
@@ -61,6 +63,15 @@ export class AuthService {
       logger.error(`Failed to send email to ${email}:`, error);
     }
 
+    if (role === Role.ADMIN) {
+      try {
+        const store = await this.createStoreForAdmin(savedUser.id, username);
+        logger.info(`Store ${store.name} created for admin ${username}`);
+      } catch (error) {
+        logger.error(`Failed to create store for admin ${username}:`, error);
+      }
+    }
+
     return {
       userId: savedUser.id,
       username: savedUser.username,
@@ -69,6 +80,34 @@ export class AuthService {
       isVerified: false,
       createdAt: savedUser.createdAt.toISOString(),
     };
+  }
+
+  private async createStoreForAdmin(
+    userId: string,
+    username: string
+  ): Promise<Store> {
+    const storeName = await this.generateUniqueStoreName(username);
+
+    const store = this.storeRepository.create({
+      ownerId: userId,
+      name: storeName,
+      description: "Default store description",
+      createdBy: userId,
+    });
+
+    return await this.storeRepository.save(store);
+  }
+
+  private async generateUniqueStoreName(username: string): Promise<string> {
+    let storeName = username;
+    let counter = 1;
+
+    while (await this.storeRepository.findOneBy({ name: storeName })) {
+      counter++;
+      storeName = `${username}_${counter}`;
+    }
+
+    return storeName;
   }
 
   async verifyOtp(
@@ -125,7 +164,9 @@ export class AuthService {
       );
     }
 
-    if (otp.otpCode !== otpCode) {
+    const isValid = await verifyOtp(otpCode, otp.otpCode);
+
+    if (!isValid) {
       otp.attemptCount += 1;
       await this.otpRepository.save(otp);
 
@@ -153,12 +194,14 @@ export class AuthService {
     purpose: OtpPurpose,
     expiryMinutes: number = 15
   ): Promise<string> {
-    const otpCode = generateOtpCode();
+    const plainOtpCode = generateOtpCode();
     const expiresAt = calculateOtpExpiry(expiryMinutes);
+
+    const hashedOtp = await hashOtp(plainOtpCode);
 
     const otp = this.otpRepository.create({
       userId,
-      otpCode,
+      otpCode: hashedOtp,
       purpose,
       expiresAt,
       attemptCount: 0,
@@ -166,6 +209,6 @@ export class AuthService {
 
     await this.otpRepository.save(otp);
 
-    return otpCode;
+    return plainOtpCode;
   }
 }

@@ -31,4 +31,8 @@ export const env = {
   POSTGRES_DB: required("POSTGRES_DB"),
   JWT_SECRET: required("JWT_SECRET"),
   OTP_MAX_ATTEMPTS: Number(process.env.OTP_MAX_ATTEMPTS ?? "5"),
+  REDIS_HOST: required("REDIS_HOST"),
+  REDIS_PORT: Number(required("REDIS_PORT")),
+  REDIS_TLS: required("REDIS_TLS"),
+  REDIS_MAX_RETRY_DELAY_MS: Number(required("REDIS_MAX_RETRY_DELAY_MS")),
 };

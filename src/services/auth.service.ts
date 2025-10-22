@@ -11,6 +11,7 @@ import { generateOtpCode, calculateOtpExpiry } from "../utils/otp-generator";
 import { hashOtp, verifyOtp } from "../utils/otp-hasher";
 import logger from "../configs/logger";
 import { EmailService } from "./email.service";
+import { env } from "../configs/envConfig";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
@@ -155,7 +156,7 @@ export class AuthService {
       throw new CustomError("OTP code has expired", 400, "OTP_EXPIRED");
     }
 
-    const maxAttempts = 5;
+    const maxAttempts = env.OTP_MAX_ATTEMPTS;
     if (otp.attemptCount >= maxAttempts) {
       throw new CustomError(
         "Maximum OTP verification attempts exceeded",

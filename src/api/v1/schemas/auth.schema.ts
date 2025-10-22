@@ -14,7 +14,7 @@ export const registerSchema = z.object({
   email: z
     .string()
     .email("Invalid email format")
-    .max(50, "Email must not exceed 50 characters"),
+    .max(255, "Email must not exceed 255 characters"),
 
   password: z
     .string()
@@ -33,7 +33,7 @@ export const verifyOtpSchema = z.object({
   email: z
     .string()
     .email("Invalid email format")
-    .max(50, "Email must not exceed 50 characters"),
+    .max(255, "Email must not exceed 255 characters"),
 
   otpCode: z
     .string()

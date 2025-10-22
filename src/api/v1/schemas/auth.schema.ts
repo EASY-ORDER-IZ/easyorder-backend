@@ -42,3 +42,4 @@ export const verifyOtpSchema = z.object({
 });
 
 export type RegisterSchemaType = z.infer<typeof registerSchema>;
+export type VerifyOtpSchemaType = z.infer<typeof verifyOtpSchema>;

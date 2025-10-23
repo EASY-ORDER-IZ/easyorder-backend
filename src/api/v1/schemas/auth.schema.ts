@@ -42,4 +42,29 @@ export const registerSchema = z
   })
   .openapi("RegisterRequest");
 
-export type RegisterRequest = z.infer<typeof registerSchema>;
+export const loginSchema = z.object({
+  username: z
+    .string()
+    .min(2, "Username must be at least 2 characters")
+    .max(20, "Username must not exceed 20 characters")
+    .regex(
+      /^[a-zA-Z0-9_]+$/,
+      "Username can only contain letters, numbers, and underscores"
+    )
+    .openapi({
+      example: "username",
+      description: "The username of the user",
+    }),
+
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(
+      /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])\S+$/,
+      "Password must contain at least one uppercase letter, one number, one special character, and no spaces"
+    )
+    .openapi({
+      example: "str0ngP@ssword",
+      description: "The password of the user",
+    }),
+});

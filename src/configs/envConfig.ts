@@ -35,4 +35,8 @@ export const env = {
   REFRESH_TOKEN_TTL_SECONDS: Number(required("REFRESH_TOKEN_TTL_SECONDS")),
   OTP_MAX_ATTEMPTS: Number(process.env.OTP_MAX_ATTEMPTS ?? "5"),
   OTP_EXPIRY_MINUTES: Number(process.env.OTP_EXPIRY_MINUTES ?? "15"),
+  REDIS_HOST: required("REDIS_HOST"),
+  REDIS_PORT: Number(required("REDIS_PORT")),
+  REDIS_TLS: required("REDIS_TLS"),
+  REDIS_MAX_RETRY_DELAY_MS: Number(required("REDIS_MAX_RETRY_DELAY_MS")),
 };

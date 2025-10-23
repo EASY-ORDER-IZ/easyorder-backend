@@ -1,8 +1,10 @@
 import type { Response } from "express";
 import type { RegisterRequest , LoginRequest } from "../requests/auth.request";
+import type { VerifyOtpRequest } from "../schemas/auth.schema";
 import type {
   RegisterResponse,
   ErrorResponse,
+  VerifyOtpResponse,
 } from "../responses/auth.response";
 import { AuthService } from "../../../services/auth.service";
 import { CustomError } from "../../../utils/custom-error";
@@ -56,6 +58,38 @@ export class AuthController {
 
       res.status(200).json({
         data: loginResult,
+      });
+    } catch (error) {
+      if (error instanceof CustomError) {
+        res.status(error.statusCode).json({
+          error: {
+            code: error.code ?? "ERROR",
+            message: error.message,
+          },
+        });
+        return;
+      }
+
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred.",
+        },
+      });
+    }
+  }
+
+  static async verifyOtp(
+    req: ValidatedRequest,
+    res: Response<VerifyOtpResponse | ErrorResponse>
+  ): Promise<void> {
+    try {
+      const { email, otpCode } = req.validatedBody as VerifyOtpRequest;
+
+      const result = await AuthController.authService.verifyOtp(email, otpCode);
+
+      res.status(200).json({
+        data: result,
       });
     } catch (error) {
       if (error instanceof CustomError) {

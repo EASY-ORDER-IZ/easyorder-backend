@@ -12,6 +12,9 @@ services:
     depends_on:
       postgres-dev:
         condition: service_healthy
+      redis-dev:
+        condition: service_healthy
+
   postgres-dev:
     image: postgres:16
     container_name: easyorder-postgres-dev
@@ -43,6 +46,67 @@ services:
       retries: 5
     profiles: ["test"]
 
+  redis-dev:
+    image: redis:7-alpine
+    container_name: easyorder-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-dev-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: easyorder-redis-test
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-test-data:/data
+    command: redis-server --save "" --appendonly no # No persistence for tests
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    profiles: ["test"]
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: easyorder-redis-commander
+    restart: unless-stopped
+    environment:
+      - REDIS_HOSTS=dev:redis-dev:6379,test:redis-test:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis-dev
+    profiles: ["dev-tools"]
+
 volumes:
   pg-dev-data:
   pg-test-data:
+  redis-dev-data:
+  redis-test-data:

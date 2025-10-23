@@ -2,6 +2,7 @@ import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
 import { validateSchema } from "../../middlewares/schemaValidator";
 import { loginSchema, registerSchema } from "../schemas/auth.schema";
+import { verifyOtpSchema } from "../schemas/auth.schema";
 
 const router = Router();
 
@@ -14,6 +15,12 @@ router.post(
   "/login",
   validateSchema(loginSchema, null, null),
   AuthController.login
+);
+
+router.post(
+  "/verify-otp",
+  validateSchema(verifyOtpSchema, null, null),
+  AuthController.verifyOtp
 );
 
 export default router;

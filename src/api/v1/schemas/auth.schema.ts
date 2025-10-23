@@ -68,3 +68,19 @@ export const loginSchema = z.object({
       description: "The password of the user",
     }),
 });
+export const verifyOtpSchema = z
+  .object({
+    email: z
+      .string()
+      .email("Invalid email format")
+      .max(255, "Email must not exceed 255 characters"),
+
+    otpCode: z
+      .string()
+      .length(6, "OTP code must be exactly 6 characters")
+      .regex(/^\d+$/, "OTP code must contain only digits"),
+  })
+  .openapi("VerifyOtpRequest");
+
+export type RegisterRequest = z.infer<typeof registerSchema>;
+export type VerifyOtpRequest = z.infer<typeof verifyOtpSchema>;

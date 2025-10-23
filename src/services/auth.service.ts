@@ -5,13 +5,17 @@ import { UserRole } from "../entities/UserRole";
 import { OtpCode } from "../entities/OtpCode";
 import { Store } from "../entities/Store";
 import { AccountStatus, OtpPurpose, Role } from "../constants";
-import type { RegisterRequest } from "../api/v1/schemas/auth.schema";
+import type {
+  LoginRequest,
+  RegisterRequest,
+} from "../api/v1/requests/auth.request";
 import { CustomError } from "../utils/custom-error";
 import { generateOtpCode, calculateOtpExpiry } from "../utils/otp-generator";
 import { hashOtp } from "../utils/otp-hasher";
 import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
+import { TokenGenerator } from "../utils/jwt";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
@@ -183,5 +187,59 @@ export class AuthService {
 
     await this.otpRepository.save(otp);
     return plainOtpCode;
+  }
+
+  async login(data: LoginRequest): Promise<{
+    userId: string;
+    username: string;
+    email: string;
+    role: Role | null;
+    isVerified: boolean;
+    createdAt: string;
+    accessToken?: string;
+    refreshToken?: string;
+  }> {
+    const user = await this.userRepository.findOne({
+      where: { username: data.username },
+      relations: ["roles"],
+    });
+
+    if (!user) {
+      throw new CustomError("Invalid username or password", 401, "AUTH_FAILED");
+    }
+
+    const passwordValid = await this.verifyPassword(user.id, data.password);
+    if (!passwordValid) {
+      throw new CustomError("Invalid username or password", 401, "AUTH_FAILED");
+    }
+
+    const roles = user.userRoles.map((role) => role.role);
+    let userRole: Role;
+    if (roles.includes(Role.ADMIN)) {
+      userRole = Role.ADMIN;
+    } else {
+      userRole = Role.CUSTOMER;
+    }
+
+    const { accessToken, refreshToken } =
+      new TokenGenerator().generateAuthTokens(user.id, userRole);
+
+    return {
+      userId: user.id,
+      username: user.username,
+      email: user.email,
+      role: userRole,
+      isVerified: user.accountStatus === AccountStatus.ACTIVE,
+      createdAt: user.createdAt.toISOString(),
+    };
+  }
+
+  async verifyPassword(userId: string, password: string): Promise<boolean> {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user) {
+      throw new CustomError("User not found", 404, "USER_NOT_FOUND");
+    }
+
+    return await argon2.verify(user.passwordHash, password);
   }
 }

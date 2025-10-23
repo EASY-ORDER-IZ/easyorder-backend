@@ -31,4 +31,5 @@ export const env = {
   POSTGRES_DB: required("POSTGRES_DB"),
   JWT_SECRET: required("JWT_SECRET"),
   OTP_MAX_ATTEMPTS: Number(process.env.OTP_MAX_ATTEMPTS ?? "5"),
+  OTP_EXPIRY_MINUTES: Number(process.env.OTP_EXPIRY_MINUTES ?? "15"),
 };

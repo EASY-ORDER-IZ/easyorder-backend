@@ -1,21 +1,22 @@
-import type { Request, Response } from "express";
-import type { RegisterRequest } from "../requests/auth.request";
+import type { Response } from "express";
+import type { RegisterRequest } from "../schemas/auth.schema";
 import type {
   RegisterResponse,
   ErrorResponse,
 } from "../responses/auth.response";
 import { AuthService } from "../../../services/auth.service";
 import { CustomError } from "../../../utils/custom-error";
+import type { ValidatedRequest } from "../../middlewares/schemaValidator";
 
 export class AuthController {
   private static authService = new AuthService();
 
   static async register(
-    req: Request<{}, {}, RegisterRequest>,
+    req: ValidatedRequest,
     res: Response<RegisterResponse | ErrorResponse>
   ): Promise<void> {
     try {
-      const userData = req.body;
+      const userData = req.validatedBody as RegisterRequest;
 
       const user = await AuthController.authService.register(userData);
 
@@ -30,6 +31,7 @@ export class AuthController {
             message: error.message,
           },
         });
+        return;
       }
 
       res.status(500).json({

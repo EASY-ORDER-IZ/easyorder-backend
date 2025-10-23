@@ -1,8 +1,5 @@
-import type { Request, Response } from "express";
-import type {
-  RegisterRequest,
-  VerifyOtpRequest,
-} from "../requests/auth.request";
+import type { Response } from "express";
+import type { RegisterRequest, VerifyOtpRequest } from "../schemas/auth.schema";
 import type {
   RegisterResponse,
   ErrorResponse,
@@ -10,16 +7,17 @@ import type {
 } from "../responses/auth.response";
 import { AuthService } from "../../../services/auth.service";
 import { CustomError } from "../../../utils/custom-error";
+import type { ValidatedRequest } from "../../middlewares/schemaValidator";
 
 export class AuthController {
   private static authService = new AuthService();
 
   static async register(
-    req: Request<{}, {}, RegisterRequest>,
+    req: ValidatedRequest,
     res: Response<RegisterResponse | ErrorResponse>
   ): Promise<void> {
     try {
-      const userData = req.body;
+      const userData = req.validatedBody as RegisterRequest;
 
       const user = await AuthController.authService.register(userData);
 
@@ -34,6 +32,7 @@ export class AuthController {
             message: error.message,
           },
         });
+        return;
       }
 
       res.status(500).json({
@@ -46,11 +45,11 @@ export class AuthController {
   }
 
   static async verifyOtp(
-    req: Request<{}, {}, VerifyOtpRequest>,
+    req: ValidatedRequest,
     res: Response<VerifyOtpResponse | ErrorResponse>
   ): Promise<void> {
     try {
-      const { email, otpCode } = req.body;
+      const { email, otpCode } = req.validatedBody as VerifyOtpRequest;
 
       const result = await AuthController.authService.verifyOtp(email, otpCode);
 
@@ -65,6 +64,7 @@ export class AuthController {
             message: error.message,
           },
         });
+        return;
       }
 
       res.status(500).json({

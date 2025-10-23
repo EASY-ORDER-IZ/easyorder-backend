@@ -8,6 +8,11 @@ export interface RegisterResponse {
     role: Role;
     isVerified: boolean;
     createdAt: string;
+    store?: {
+      storeId: string;
+      storeName: string;
+      createdAt: string;
+    };
   };
 }
 

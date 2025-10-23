@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import type { ZodTypeAny } from "zod";
 import logger from "../../configs/logger";
 
-interface ValidatedRequest extends Request {
+export interface ValidatedRequest extends Request {
   validatedBody?: unknown;
   validatedQuery?: unknown;
   validatedParams?: unknown;

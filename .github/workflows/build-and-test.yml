@@ -20,6 +20,11 @@ jobs:
           POSTGRES_DB: ${{ secrets.TEST_DB_NAME }}
         ports: 
         - 5433:5432
+        
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379  
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,6 +44,7 @@ jobs:
       - name: Run tests with coverage
         run: npm test -- --coverage
         env:
+          # Database vars
           DB_HOST: localhost
           DB_PORT: 5433
           POSTGRES_USER: ${{ secrets.TEST_DB_USER }}
@@ -47,10 +53,23 @@ jobs:
           # App configuration vars
           PORT: 3000
           NODE_ENV: test
-          JWT_SECRET: test-jwt-secret-for-ci-only 
-          #Not required
-          JWT_EXPIRES_IN: 1h 
-          JWT_REFRESH_EXPIRES_IN: 7d
+          # Authentication & Token Management
+          JWT_SECRET: ${{secrets.JWT_SECRET}} 
+          JWT_REFRESH_SECRET: ${{secrets.JWT_REFRESH_SECRET}}
+          ACCESS_TOKEN_TTL_SECONDS: ${{ secrets.ACCESS_TOKEN_TTL_SECONDS }}
+          REFRESH_TOKEN_TTL_SECONDS: ${{ secrets.REFRESH_TOKEN_TTL_SECONDS }}
+          # OTP Configuration
+          OTP_MAX_ATTEMPTS: ${{ secrets.OTP_MAX_ATTEMPTS }}
+          OTP_EXPIRY_MINUTES: ${{ secrets.OTP_EXPIRY_MINUTES }}
+          # SMTP Configuration
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          # Redis Configuration
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_TLS: ${{ secrets.REDIS_TLS }}
+          REDIS_MAX_RETRY_DELAY_MS: ${{ secrets.REDIS_MAX_RETRY_DELAY_MS }}
+          
           
       - name: Verify build and test success
         run: echo "✅ Build and tests completed successfully."

@@ -8,7 +8,7 @@ import { AccountStatus, OtpPurpose, Role } from "../constants";
 import type { RegisterRequest } from "../api/v1/schemas/auth.schema";
 import { CustomError } from "../utils/custom-error";
 import { generateOtpCode, calculateOtpExpiry } from "../utils/otp-generator";
-import { hashOtp } from "../utils/otp-hasher";
+import { hashOtp, verifyOtp } from "../utils/otp-hasher";
 import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
@@ -162,6 +162,85 @@ export class AuthService {
     }
 
     return storeName;
+  }
+
+  async verifyOtp(
+    email: string,
+    otpCode: string
+  ): Promise<{
+    userId: string;
+    email: string;
+    isVerified: boolean;
+    verifiedAt: string;
+  }> {
+    const user = await this.userRepository.findOneBy({ email });
+    if (!user) {
+      throw new CustomError("User not found", 404, "USER_NOT_FOUND");
+    }
+
+    const otp = await this.otpRepository.findOne({
+      where: {
+        userId: user.id,
+        purpose: OtpPurpose.EMAIL_VERIFICATION,
+      },
+      order: {
+        createdAt: "DESC",
+      },
+    });
+
+    if (!otp) {
+      throw new CustomError(
+        "No OTP found. Please request a new one.",
+        400,
+        "OTP_NOT_FOUND"
+      );
+    }
+
+    if (otp.verifiedAt !== null) {
+      throw new CustomError(
+        "OTP code has already been used",
+        400,
+        "OTP_ALREADY_USED"
+      );
+    }
+
+    const now = new Date();
+    if (otp.expiresAt < now) {
+      throw new CustomError("OTP code has expired", 400, "OTP_EXPIRED");
+    }
+
+    const maxAttempts = env.OTP_MAX_ATTEMPTS;
+    if (otp.attemptCount >= maxAttempts) {
+      throw new CustomError(
+        "Maximum OTP verification attempts exceeded",
+        400,
+        "OTP_MAX_ATTEMPTS"
+      );
+    }
+
+    const isValid = await verifyOtp(otpCode, otp.otpCode);
+
+    if (!isValid) {
+      otp.attemptCount += 1;
+      await this.otpRepository.save(otp);
+
+      throw new CustomError("Invalid OTP code", 400, "INVALID_OTP");
+    }
+
+    otp.verifiedAt = now;
+    otp.attemptCount += 1;
+    await this.otpRepository.save(otp);
+
+    user.emailVerified = now;
+    user.accountStatus = AccountStatus.ACTIVE;
+    await this.userRepository.save(user);
+
+    return {
+      userId: user.id,
+      email: user.email,
+      isVerified: true,
+      verifiedAt: user.emailVerified.toISOString(),
+    };
   }
 
   async generateOtp(

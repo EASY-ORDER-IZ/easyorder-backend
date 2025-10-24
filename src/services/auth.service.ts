@@ -16,6 +16,7 @@ import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
 import { TokenGenerator } from "../utils/jwt";
+import { storeRefreshToken } from "../utils/redisToken";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
@@ -23,6 +24,7 @@ export class AuthService {
   private otpRepository = AppDataSource.getRepository(OtpCode);
   private storeRepository = AppDataSource.getRepository(Store);
   private emailService = new EmailService();
+  private tokenGenerator = new TokenGenerator();
 
   async register(data: RegisterRequest): Promise<{
     userId: string;
@@ -269,18 +271,22 @@ export class AuthService {
   }
 
   async login(data: LoginRequest): Promise<{
-    userId: string;
-    username: string;
-    email: string;
-    role: Role | null;
-    isVerified: boolean;
-    createdAt: string;
-    accessToken?: string;
-    refreshToken?: string;
+    data: {
+      userId: string;
+      username: string;
+      email: string;
+      role: Role | null;
+      isVerified: boolean;
+      createdAt: string;
+    };
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+    };
   }> {
     const user = await this.userRepository.findOne({
       where: { username: data.username },
-      relations: ["roles"],
+      relations: ["userRoles"],
     });
 
     if (!user) {
@@ -292,6 +298,14 @@ export class AuthService {
       throw new CustomError("Invalid username or password", 401, "AUTH_FAILED");
     }
 
+    if (user.emailVerified === null) {
+      throw new CustomError("Email not verified", 403, "EMAIL_NOT_VERIFIED");
+    }
+
+    if (user.accountStatus !== AccountStatus.ACTIVE) {
+      throw new CustomError("Account is not active", 403, "ACCOUNT_INACTIVE");
+    }
+
     const roles = user.userRoles.map((role) => role.role);
     let userRole: Role;
     if (roles.includes(Role.ADMIN)) {
@@ -300,16 +314,26 @@ export class AuthService {
       userRole = Role.CUSTOMER;
     }
 
-    const { accessToken, refreshToken } =
-      new TokenGenerator().generateAuthTokens(user.id, userRole);
+    const { accessToken, refreshToken, refreshJti, refreshTtlSeconds } =
+      this.tokenGenerator.generateAuthTokens(user.id, userRole);
+
+    await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
+
+    logger.info(`User ${user.username} logged in successfully`);
 
     return {
-      userId: user.id,
-      username: user.username,
-      email: user.email,
-      role: userRole,
-      isVerified: user.accountStatus === AccountStatus.ACTIVE,
-      createdAt: user.createdAt.toISOString(),
+      data: {
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        role: userRole,
+        isVerified: user.accountStatus === AccountStatus.ACTIVE,
+        createdAt: user.createdAt.toISOString(),
+      },
+      tokens: {
+        accessToken,
+        refreshToken,
+      },
     };
   }
 

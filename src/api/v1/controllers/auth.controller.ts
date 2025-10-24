@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import type { RegisterRequest , LoginRequest } from "../requests/auth.request";
+import type { RegisterRequest, LoginRequest } from "../requests/auth.request";
 import type { VerifyOtpRequest } from "../schemas/auth.schema";
 import type {
   RegisterResponse,

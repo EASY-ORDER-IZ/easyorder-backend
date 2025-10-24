@@ -9,7 +9,15 @@ const ACCESS_TOKEN_TTL = env.ACCESS_TOKEN_TTL_SECONDS;
 const REFRESH_TOKEN_TTL_SECONDS = env.REFRESH_TOKEN_TTL_SECONDS;
 
 export class TokenGenerator {
-  generateAuthTokens(userId: string, role: Role) {
+  generateAuthTokens(
+    userId: string,
+    role: Role
+  ): {
+    accessToken: string;
+    refreshToken: string;
+    refreshJti: string;
+    refreshTtlSeconds: number;
+  } {
     const refreshJti = uuidv4();
 
     const accessToken = jwt.sign({ userId, role }, ACCESS_TOKEN_SECRET, {
@@ -17,18 +25,16 @@ export class TokenGenerator {
     });
 
     const refreshToken = jwt.sign(
-      { userId, role, jti: refreshJti }, // JTI is crucial for Redis management
+      { userId, role, jti: refreshJti },
       REFRESH_TOKEN_SECRET,
-      { expiresIn: REFRESH_TOKEN_TTL_SECONDS } // Must match Redis TTL
+      { expiresIn: REFRESH_TOKEN_TTL_SECONDS }
     );
 
     return {
       accessToken,
       refreshToken,
-      refreshJti, // Used as the Redis key
-      refreshTtlSeconds: REFRESH_TOKEN_TTL_SECONDS, // Used as the Redis TTL
+      refreshJti,
+      refreshTtlSeconds: REFRESH_TOKEN_TTL_SECONDS,
     };
   }
-
-  // You will add a method here later for token validation and refreshing
 }

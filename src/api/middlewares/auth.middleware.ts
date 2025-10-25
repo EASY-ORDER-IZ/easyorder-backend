@@ -1,4 +1,3 @@
-// src/middlewares/authMiddleware.ts
 import type { Request, Response, NextFunction } from "express";
 import type { JwtPayload } from "jsonwebtoken";
 import jwt from "jsonwebtoken";
@@ -19,18 +18,23 @@ export const authenticate =
   (requiredRoles?: string[]) =>
   async (
     req: AuthenticatedRequest,
-    _res: Response,
+    res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
       const authHeader = req.headers.authorization;
+      const jwt_token = authHeader?.split(" ")[1];
 
       if (
         authHeader === null ||
         authHeader === "" ||
         authHeader === undefined ||
-        !authHeader.startsWith("Bearer ")
+        jwt_token === null ||
+        jwt_token === "" ||
+        jwt_token === undefined
       ) {
+        logger.warn('Authentication failed: Missing or invalid token format');
+
         throw new CustomError(
           "Missing or invalid Authorization header",
           401,

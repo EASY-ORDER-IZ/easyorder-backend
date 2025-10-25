@@ -42,6 +42,28 @@ export const registerSchema = z
   })
   .openapi("RegisterRequest");
 
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .email("Invalid email format")
+    .max(255, "Email must not exceed 255 characters")
+    .openapi({
+      example: "email@gmail.com",
+      description: "The email of the user",
+    }),
+
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(
+      /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])\S+$/,
+      "Password must contain at least one uppercase letter, one number, one special character, and no spaces"
+    )
+    .openapi({
+      example: "str0ngP@ssword",
+      description: "The password of the user",
+    }),
+});
 export const verifyOtpSchema = z
   .object({
     email: z

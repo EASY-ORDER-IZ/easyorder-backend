@@ -43,17 +43,13 @@ export const registerSchema = z
   .openapi("RegisterRequest");
 
 export const loginSchema = z.object({
-  username: z
+  email: z
     .string()
-    .min(2, "Username must be at least 2 characters")
-    .max(20, "Username must not exceed 20 characters")
-    .regex(
-      /^[a-zA-Z0-9_]+$/,
-      "Username can only contain letters, numbers, and underscores"
-    )
+    .email("Invalid email format")
+    .max(255, "Email must not exceed 255 characters")
     .openapi({
-      example: "username",
-      description: "The username of the user",
+      example: "email@gmail.com",
+      description: "The email of the user",
     }),
 
   password: z

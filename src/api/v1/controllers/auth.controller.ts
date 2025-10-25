@@ -47,14 +47,11 @@ export class AuthController {
   }
 
   static async login(req: ValidatedRequest, res: Response): Promise<void> {
-    const { username, password } = req.validatedBody as LoginRequest;
-    logger.info(`login attempt for user: ${username}`);
+    const userData = req.validatedBody as LoginRequest;
+    logger.info(`login attempt for user: ${userData.email}`);
 
     try {
-      const loginResult = await AuthController.authService.login(
-        // what is passed
-        { username, password }
-      );
+      const loginResult = await AuthController.authService.login(userData);
 
       res.status(200).json({
         data: loginResult,

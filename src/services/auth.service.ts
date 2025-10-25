@@ -285,17 +285,17 @@ export class AuthService {
     };
   }> {
     const user = await this.userRepository.findOne({
-      where: { username: data.username },
+      where: { email: data.email },
       relations: ["userRoles"],
     });
 
     if (!user) {
-      throw new CustomError("Invalid username or password", 401, "AUTH_FAILED");
+      throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
     }
 
     const passwordValid = await this.verifyPassword(user.id, data.password);
     if (!passwordValid) {
-      throw new CustomError("Invalid username or password", 401, "AUTH_FAILED");
+      throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
     }
 
     if (user.emailVerified === null) {
@@ -319,7 +319,7 @@ export class AuthService {
 
     await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
 
-    logger.info(`User ${user.username} logged in successfully`);
+    logger.info(`User ${user.email} logged in successfully`);
 
     return {
       data: {

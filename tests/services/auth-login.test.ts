@@ -131,5 +131,4 @@ describe("AuthService - login", () => {
 
     expect(result.data.role).toBe(Role.CUSTOMER);
   });
-
 });

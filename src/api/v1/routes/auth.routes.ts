@@ -14,6 +14,7 @@ router.post(
   validateSchema(registerSchema, null, null),
   AuthController.register
 );
+
 router.post(
   "/login",
   validateSchema(loginSchema, null, null),

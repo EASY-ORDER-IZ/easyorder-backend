@@ -12,7 +12,7 @@ export class EmailService {
       rejectUnauthorized: false,
     },
   });
-
+  // ! try and catch
   async sendOtp(email: string, otp: string): Promise<void> {
     await this.transporter.sendMail({
       from: process.env.SMTP_USER,

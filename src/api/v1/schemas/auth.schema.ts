@@ -41,7 +41,7 @@ export const registerSchema = z
     path: ["confirmPassword"],
   })
   .openapi("RegisterRequest");
-
+// ! trim
 export const verifyOtpSchema = z
   .object({
     email: z
@@ -56,5 +56,15 @@ export const verifyOtpSchema = z
   })
   .openapi("VerifyOtpRequest");
 
+export const resendOtpSchema = z
+  .object({
+    email: z
+      .string()
+      .email("Invalid email format")
+      .max(255, "Email must not exceed 255 characters"),
+  })
+  .openapi("ResendOtpRequest");
+
 export type RegisterRequest = z.infer<typeof registerSchema>;
 export type VerifyOtpRequest = z.infer<typeof verifyOtpSchema>;
+export type ResendOtpRequest = z.infer<typeof resendOtpSchema>;

@@ -65,6 +65,16 @@ export const resendOtpSchema = z
   })
   .openapi("ResendOtpRequest");
 
+export const logoutSchema = z
+  .object({
+    refreshToken: z.string().min(1, "Refresh token is required").openapi({
+      example: "refresh-token",
+      description: "add your refresh token",
+    }),
+  })
+  .openapi("LogoutRequest");
+
+export type LogoutRequest = z.infer<typeof logoutSchema>;
 export type RegisterRequest = z.infer<typeof registerSchema>;
 export type VerifyOtpRequest = z.infer<typeof verifyOtpSchema>;
 export type ResendOtpRequest = z.infer<typeof resendOtpSchema>;

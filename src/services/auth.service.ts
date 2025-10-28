@@ -13,6 +13,7 @@ import { hashOtp, verifyOtp } from "../utils/otp-hasher";
 import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
+import { deleteRefreshToken } from "../utils/redisToken";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
@@ -329,5 +330,12 @@ export class AuthService {
 
     await this.otpRepository.save(otp);
     return plainOtpCode;
+  }
+  async logout(refreshToken: string): Promise<void> {
+    if (!refreshToken) {
+      logger.warn("Logout failed: no refresh token provided");
+      throw new CustomError("Refresh token is required", 400, "INVALID_INPUT");
+    }
+    await deleteRefreshToken(refreshToken);
   }
 }

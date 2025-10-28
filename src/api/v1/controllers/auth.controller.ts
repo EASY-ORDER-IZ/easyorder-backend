@@ -1,27 +1,26 @@
 import type { Response } from "express";
-import type { RegisterRequest } from "../schemas/auth.schema";
-import type {
-  RegisterResponse,
-  ErrorResponse,
-} from "../responses/auth.response";
 import { AuthService } from "../../../services/auth.service";
 import { CustomError } from "../../../utils/custom-error";
-import type { ValidatedRequest } from "../../middlewares/schemaValidator";
+import { toRegisterResponseDto } from "../dtos/auth.dto";
+import type { RegisterRequestType } from "../types";
 
 export class AuthController {
   private static authService = new AuthService();
 
   static async register(
-    req: ValidatedRequest,
-    res: Response<RegisterResponse | ErrorResponse>
+    req: RegisterRequestType,
+    res: Response
   ): Promise<void> {
     try {
-      const userData = req.validatedBody as RegisterRequest;
+      const userData = req.body;
 
-      const user = await AuthController.authService.register(userData);
+      const { user, role } =
+        await AuthController.authService.register(userData);
+
+      const responseData = toRegisterResponseDto(user, role);
 
       res.status(201).json({
-        data: user,
+        data: responseData,
       });
     } catch (error) {
       if (error instanceof CustomError) {

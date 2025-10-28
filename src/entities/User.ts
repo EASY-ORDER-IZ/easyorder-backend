@@ -57,7 +57,10 @@ export class User {
   @OneToMany(() => UserRole, (userRole) => userRole.user)
   userRoles!: UserRole[];
 
-  @OneToOne(() => Store, (store) => store.owner)
+  @OneToOne(() => Store, (store) => store.owner, {
+    cascade: true,
+    eager: false,
+  })
   store?: Store;
 
   @OneToMany(() => OtpCode, (otpCode) => otpCode.user)

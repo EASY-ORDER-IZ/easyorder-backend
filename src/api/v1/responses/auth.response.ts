@@ -25,6 +25,13 @@ export interface VerifyOtpResponse {
   };
 }
 
+export interface ResendOtpResponse {
+  data: {
+    email: string;
+    expiresInMinutes: number;
+  };
+}
+
 export interface ErrorResponse {
   error: {
     code: string;

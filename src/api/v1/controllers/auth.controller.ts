@@ -1,9 +1,14 @@
-import type { Response } from "express";
-import type { RegisterRequest, VerifyOtpRequest } from "../schemas/auth.schema";
+import type { Request, Response } from "express";
 import type {
-  RegisterResponse,
+  // RegisterRequest,
+  VerifyOtpRequest,
+  ResendOtpRequest,
+} from "../schemas/auth.schema";
+import type {
+  // RegisterResponse,
   ErrorResponse,
   VerifyOtpResponse,
+  ResendOtpResponse,
 } from "../responses/auth.response";
 import { AuthService } from "../../../services/auth.service";
 import { CustomError } from "../../../utils/custom-error";
@@ -12,15 +17,12 @@ import type { ValidatedRequest } from "../../middlewares/schemaValidator";
 export class AuthController {
   private static authService = new AuthService();
 
-  static async register(
-    req: ValidatedRequest,
-    res: Response<RegisterResponse | ErrorResponse>
-  ): Promise<void> {
+  static async register(req: Request, res: Response): Promise<void> {
     try {
-      const userData = req.validatedBody as RegisterRequest;
+      const userData = req.body;
 
       const user = await AuthController.authService.register(userData);
-
+      // ! error middleware handler
       res.status(201).json({
         data: user,
       });
@@ -52,6 +54,38 @@ export class AuthController {
       const { email, otpCode } = req.validatedBody as VerifyOtpRequest;
 
       const result = await AuthController.authService.verifyOtp(email, otpCode);
+
+      res.status(200).json({
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof CustomError) {
+        res.status(error.statusCode).json({
+          error: {
+            code: error.code ?? "ERROR",
+            message: error.message,
+          },
+        });
+        return;
+      }
+
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred.",
+        },
+      });
+    }
+  }
+
+  static async resendOtp(
+    req: ValidatedRequest,
+    res: Response<ResendOtpResponse | ErrorResponse>
+  ): Promise<void> {
+    try {
+      const { email } = req.validatedBody as ResendOtpRequest;
+
+      const result = await AuthController.authService.resendOtp(email);
 
       res.status(200).json({
         data: result,

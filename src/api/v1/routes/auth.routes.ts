@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
 import { validateSchema } from "../../middlewares/schemaValidator";
-import { registerSchema, verifyOtpSchema } from "../schemas/auth.schema";
+import {
+  registerSchema,
+  resendOtpSchema,
+  verifyOtpSchema,
+} from "../schemas/auth.schema";
 
 const router = Router();
 
@@ -15,6 +19,12 @@ router.post(
   "/verify-otp",
   validateSchema(verifyOtpSchema, null, null),
   AuthController.verifyOtp
+);
+
+router.post(
+  "/resend-otp",
+  validateSchema(resendOtpSchema, null, null),
+  AuthController.resendOtp
 );
 
 export default router;

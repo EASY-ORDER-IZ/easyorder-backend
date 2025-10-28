@@ -1,4 +1,5 @@
 import argon2 from "argon2";
+import { MoreThan, IsNull } from "typeorm";
 import { AppDataSource } from "../configs/database";
 import { User } from "../entities/User";
 import { UserRole } from "../entities/UserRole";
@@ -39,7 +40,7 @@ export class AuthService {
     if (existingEmail) {
       throw new CustomError("Email already registered", 409, "EMAIL_EXISTS");
     }
-
+    // ! transaction
     const passwordHash = await argon2.hash(password);
 
     const user = this.userRepository.create({
@@ -52,7 +53,7 @@ export class AuthService {
     const savedUser = await this.userRepository.save(user);
 
     const role = createStore === "yes" ? Role.ADMIN : Role.CUSTOMER;
-
+    // ! cascade insert
     await this.userRoleRepository.save({
       userId: savedUser.id,
       role,
@@ -111,7 +112,7 @@ export class AuthService {
         throw error;
       }
     }
-
+    // ! return user
     return {
       userId: savedUser.id,
       username: savedUser.username,
@@ -181,7 +182,7 @@ export class AuthService {
     const otp = await this.otpRepository.findOne({
       where: {
         userId: user.id,
-        purpose: OtpPurpose.EMAIL_VERIFICATION,
+        purpose: OtpPurpose.EMAIL_VERIFICATION, // ! remove purpose
       },
       order: {
         createdAt: "DESC",
@@ -240,6 +241,72 @@ export class AuthService {
       email: user.email,
       isVerified: true,
       verifiedAt: user.emailVerified.toISOString(),
+    };
+  }
+
+  async resendOtp(email: string): Promise<{
+    email: string;
+    expiresInMinutes: number;
+  }> {
+    const user = await this.userRepository.findOneBy({ email });
+    if (!user) {
+      throw new CustomError(
+        "User not found with this email",
+        404,
+        "USER_NOT_FOUND"
+      );
+    }
+
+    if (user.emailVerified !== null) {
+      throw new CustomError(
+        "Email is already verified",
+        400,
+        "EMAIL_ALREADY_VERIFIED"
+      );
+    }
+
+    if (user.accountStatus !== AccountStatus.PENDING) {
+      throw new CustomError(
+        "Account is not in pending status",
+        400,
+        "INVALID_ACCOUNT_STATUS"
+      );
+    }
+
+    const now = new Date();
+    await this.otpRepository.update(
+      {
+        userId: user.id,
+        purpose: OtpPurpose.EMAIL_VERIFICATION,
+        verifiedAt: IsNull(),
+        expiresAt: MoreThan(now),
+      },
+      {
+        expiresAt: now,
+      }
+    );
+
+    const otpCode = await this.generateOtp(
+      user.id,
+      OtpPurpose.EMAIL_VERIFICATION,
+      env.OTP_EXPIRY_MINUTES
+    );
+
+    try {
+      await this.emailService.sendOtp(email, otpCode);
+      logger.info(`OTP resent successfully to ${email}`);
+    } catch (error) {
+      logger.error(`Failed to send OTP email to ${email}:`, error);
+      throw new CustomError(
+        "Failed to send OTP email. Please try again later.",
+        500,
+        "EMAIL_SEND_FAILED"
+      );
+    }
+
+    return {
+      email: user.email,
+      expiresInMinutes: env.OTP_EXPIRY_MINUTES,
     };
   }
 

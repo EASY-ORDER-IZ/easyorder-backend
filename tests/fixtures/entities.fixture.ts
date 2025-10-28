@@ -1,7 +1,8 @@
 import type { DataSource } from "typeorm";
 import { User } from "../../src/entities/User";
 import { Store } from "../../src/entities/Store";
-import { AccountStatus } from "../../src/constants";
+import { AccountStatus, OtpPurpose } from "../../src/constants";
+import { OtpCode } from "../../src/entities/OtpCode";
 
 export class TestFixtures {
   constructor(private dataSource: DataSource) {}
@@ -44,5 +45,23 @@ export class TestFixtures {
     const user = await this.createUser(userData);
     const store = await this.createStore(user.id, storeData);
     return { user, store };
+  }
+
+  async createOtp(
+    userId: string,
+    customData?: Partial<OtpCode>
+  ): Promise<OtpCode> {
+    const otpRepo = this.dataSource.getRepository(OtpCode);
+
+    const otp = {
+      userId,
+      otpCode: "hashedOtpCode123",
+      purpose: OtpPurpose.EMAIL_VERIFICATION,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      attemptCount: 0,
+      ...customData,
+    };
+
+    return otpRepo.save(otp);
   }
 }

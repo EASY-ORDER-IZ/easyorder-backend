@@ -2,10 +2,12 @@ import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
 import { validateSchema } from "../../middlewares/schemaValidator";
 import {
+  logoutSchema,
   registerSchema,
   resendOtpSchema,
   verifyOtpSchema,
 } from "../schemas/auth.schema";
+import { authenticate } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -27,4 +29,10 @@ router.post(
   AuthController.resendOtp
 );
 
+router.post(
+  "/logout",
+  validateSchema(logoutSchema, null, null),
+  authenticate(),
+  AuthController.logout
+);
 export default router;

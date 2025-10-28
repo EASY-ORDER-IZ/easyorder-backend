@@ -14,7 +14,7 @@ const openApiDocument = generator.generateDocument({
     version: "1.0.0",
   },
   servers:
-    env.node_env === "development"
+    env.node_env === "dev"
       ? [
           {
             url: "http://localhost:3000",

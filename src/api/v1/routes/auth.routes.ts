@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { AuthController } from "../controllers/auth.controller";
-import { validateSchema } from "../../middlewares/schemaValidator";
+import { AuthController } from "../controllers/auth.controller"; // Assuming AuthController exists
+import { validateSchema } from "../../middlewares/schemaValidator"; // Assuming validateSchema exists
 import {
-  loginSchema,
   registerSchema,
+  loginSchema,
   verifyOtpSchema,
 } from "../schemas/auth.schema";
 
@@ -14,13 +14,11 @@ router.post(
   validateSchema(registerSchema, null, null),
   AuthController.register
 );
-
 router.post(
   "/login",
   validateSchema(loginSchema, null, null),
   AuthController.login
 );
-
 router.post(
   "/verify-otp",
   validateSchema(verifyOtpSchema, null, null),

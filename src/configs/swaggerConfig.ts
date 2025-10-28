@@ -1,41 +1,35 @@
-import swaggerJsdoc from "swagger-jsdoc";
+import { OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
 import swaggerUi from "swagger-ui-express";
-import type { Express } from "express";
+
+import { registry } from "../api/docs/openapi";
 import { env } from "./envConfig";
 
-export const setupSwagger = (app: Express): void => {
-  if (env.node_env !== "dev") {
-    return;
-  }
+const generator = new OpenApiGeneratorV3(registry.definitions);
 
-  const options: swaggerJsdoc.Options = {
-    definition: {
-      openapi: "3.0.0",
-      info: {
-        title: "First Chance API",
-        version: "1.0.0",
-        description: "API documentation for the First Chance backend system",
-      },
-      servers: [
-        {
-          url: `http://localhost:${env.PORT}`,
-          description: env.node_env,
-        },
-      ],
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: "http",
-            scheme: "bearer",
-            bearerFormat: "JWT",
+const openApiDocument = generator.generateDocument({
+  openapi: "3.0.0",
+  info: {
+    title: "First Chance APIs",
+    description: "API endpoints for First Chance application",
+    version: "1.0.0",
+  },
+  servers:
+    env.node_env === "development"
+      ? [
+          {
+            url: "http://localhost:3000",
+            description: "development server",
           },
-        },
-      },
-      security: [{ bearerAuth: [] }],
-    },
-    apis: ["src/api/v1/routes/**/*.ts"],
-  };
+        ]
+      : [
+          {
+            url: "http://localhost:8000",
+            description: "production server",
+          },
+        ],
+});
 
-  const swaggerSpec = swaggerJsdoc(options);
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+export const swaggerDocs = {
+  serve: swaggerUi.serve,
+  setup: swaggerUi.setup(openApiDocument),
 };

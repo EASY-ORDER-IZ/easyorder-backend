@@ -1,8 +1,9 @@
+import argon2 from "argon2";
 import { AuthService } from "../../src/services/auth.service";
 import { CustomError } from "../../src/utils/custom-error";
 import { Role, AccountStatus } from "../../src/constants";
-import argon2 from "argon2";
 import { storeRefreshToken } from "../../src/utils/redisToken";
+import type { mockUser } from "../../src/api/v1/types/auth";
 
 jest.mock("../../src/utils/redisToken", () => ({
   storeRefreshToken: jest.fn(),
@@ -12,12 +13,29 @@ jest.mock("argon2", () => ({
   verify: jest.fn(),
 }));
 
+interface MockUserRepository {
+  findOne: jest.Mock;
+  findOneBy: jest.Mock;
+}
+
+interface MockTokenGenerator {
+  generateAuthTokens: jest.Mock;
+}
+
+interface MockedDependencies {
+  userRepository: MockUserRepository;
+  tokenGenerator: MockTokenGenerator;
+}
+
 describe("AuthService - login", () => {
   let authService: AuthService;
-  let mockUser: any;
+  let mockedService: MockedDependencies;
+  let mockUser: mockUser;
 
   beforeEach(() => {
     authService = new AuthService();
+
+    mockedService = authService as unknown as MockedDependencies;
 
     mockUser = {
       id: "user-id-123",
@@ -30,12 +48,12 @@ describe("AuthService - login", () => {
       userRoles: [{ role: Role.CUSTOMER }],
     };
 
-    (authService as any).userRepository = {
+    mockedService.userRepository = {
       findOne: jest.fn().mockResolvedValue(mockUser),
       findOneBy: jest.fn().mockResolvedValue(mockUser),
     };
 
-    (authService as any).tokenGenerator = {
+    mockedService.tokenGenerator = {
       generateAuthTokens: jest.fn().mockReturnValue({
         accessToken: "access-token",
         refreshToken: "refresh-token",
@@ -75,7 +93,7 @@ describe("AuthService - login", () => {
   });
 
   it("should throw AUTH_FAILED if user not found", async () => {
-    (authService as any).userRepository.findOne.mockResolvedValue(null);
+    mockedService.userRepository.findOne.mockResolvedValue(null);
 
     await expect(
       authService.login({ email: "wrong@example.com", password: "pass" })

@@ -33,7 +33,7 @@ export const authenticate =
         jwt_token === "" ||
         jwt_token === undefined
       ) {
-        logger.warn('Authentication failed: Missing or invalid token format');
+        logger.warn("Authentication failed: Missing or invalid token format");
 
         throw new CustomError(
           "Missing or invalid Authorization header",

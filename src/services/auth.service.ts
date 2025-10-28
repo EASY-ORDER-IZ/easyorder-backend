@@ -1,5 +1,5 @@
 import type { EntityManager } from "typeorm";
-import argon2 from "argon2";
+// import argon2 from "argon2";
 import { AppDataSource } from "../configs/database";
 import { User } from "../entities/User";
 import { UserRole } from "../entities/UserRole";
@@ -29,7 +29,7 @@ export class AuthService {
       throw new CustomError("Email already registered", 409, "EMAIL_EXISTS");
     }
 
-    const passwordHash = await argon2.hash(password);
+    //const passwordHash = await argon2.hash(password);
 
     const role = createStore === "yes" ? Role.ADMIN : Role.CUSTOMER;
 
@@ -41,7 +41,7 @@ export class AuthService {
       const user = this.userRepository.create({
         username,
         email,
-        passwordHash,
+        passwordHash: password,
         accountStatus: AccountStatus.PENDING,
       });
 

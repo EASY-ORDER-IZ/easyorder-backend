@@ -7,8 +7,10 @@ import {
   DeleteDateColumn,
   OneToMany,
   OneToOne,
+  BeforeInsert,
 } from "typeorm";
 
+import argon2 from "argon2";
 import { UserRole } from "./UserRole";
 import { Store } from "./Store";
 import { OtpCode } from "./OtpCode";
@@ -65,4 +67,13 @@ export class User {
 
   @OneToMany(() => OtpCode, (otpCode) => otpCode.user)
   otpCodes!: OtpCode[];
+
+  @BeforeInsert()
+  async hashPasswordBeforeInsert(): Promise<void> {
+    console.log("passwordHash BEFORE:", this.passwordHash);
+    if (this.passwordHash !== undefined && this.passwordHash !== null) {
+      this.passwordHash = await argon2.hash(this.passwordHash);
+      console.log("✅ Password hashed!");
+    }
+  }
 }

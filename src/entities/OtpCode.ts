@@ -6,10 +6,12 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  // BeforeInsert,
 } from "typeorm";
 
 import { User } from "./User";
 import { OtpPurpose } from "../constants";
+// import { hashOtp } from "../utils/otp";
 
 @Entity("otp_codes")
 @Index(["userId"])
@@ -44,4 +46,11 @@ export class OtpCode {
   @ManyToOne(() => User, (user) => user.otpCodes, { onDelete: "CASCADE" })
   @JoinColumn({ name: "user_id" })
   user!: User;
+
+  // @BeforeInsert()
+  // async hashOtpBeforeInsert(): Promise<void> {
+  //   if (this.otpCode !== undefined && this.otpCode !== null) {
+  //     this.otpCode = await hashOtp(this.otpCode);
+  //   }
+  // }
 }

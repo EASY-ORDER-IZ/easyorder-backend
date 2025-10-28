@@ -3,6 +3,7 @@ import type {
   // RegisterRequest,
   VerifyOtpRequest,
   ResendOtpRequest,
+  LogoutRequest,
 } from "../schemas/auth.schema";
 import type {
   // RegisterResponse,
@@ -13,6 +14,7 @@ import type {
 import { AuthService } from "../../../services/auth.service";
 import { CustomError } from "../../../utils/custom-error";
 import type { ValidatedRequest } from "../../middlewares/schemaValidator";
+import logger from "../../../configs/logger";
 
 export class AuthController {
   private static authService = new AuthService();
@@ -101,6 +103,30 @@ export class AuthController {
         return;
       }
 
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred.",
+        },
+      });
+    }
+  }
+
+  static async logout(req: ValidatedRequest, res: Response): Promise<void> {
+    const { refreshToken } = req.validatedBody as LogoutRequest;
+    try {
+      await AuthController.authService.logout(refreshToken);
+
+      logger.info(`Refresh token successfully deleted: ${refreshToken}`);
+      res.status(200).json({ data: { message: "Logout successful" } });
+    } catch (error) {
+      logger.error(`Logout failed for token ${refreshToken}:`, error);
+      if (error instanceof CustomError) {
+        res.status(error.statusCode).json({
+          error: { code: error.code ?? "ERROR", message: error.message },
+        });
+        return;
+      }
       res.status(500).json({
         error: {
           code: "INTERNAL_SERVER_ERROR",

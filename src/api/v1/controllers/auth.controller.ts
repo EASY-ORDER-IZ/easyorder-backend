@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import type { LoginRequest } from "../requests/auth.request";
 import type {
   // RegisterRequest,
   VerifyOtpRequest,
@@ -16,6 +17,7 @@ import type {
 } from "../responses/auth.response";
 import { AuthService } from "../../../services/auth.service";
 import type { ValidatedRequest } from "../../middlewares/schemaValidator";
+import logger from "../../../configs/logger";
 
 export class AuthController {
   private static authService = new AuthService();
@@ -35,6 +37,36 @@ export class AuthController {
       });
     } catch (error) {
       next(error);
+    }
+  }
+
+  static async login(req: ValidatedRequest, res: Response): Promise<void> {
+    const userData = req.validatedBody as LoginRequest;
+    logger.info(`login attempt for user: ${userData.email}`);
+
+    try {
+      const loginResult = await AuthController.authService.login(userData);
+
+      res.status(200).json({
+        data: loginResult,
+      });
+    } catch (error) {
+      if (error instanceof CustomError) {
+        res.status(error.statusCode).json({
+          error: {
+            code: error.code ?? "ERROR",
+            message: error.message,
+          },
+        });
+        return;
+      }
+
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred.",
+        },
+      });
     }
   }
 

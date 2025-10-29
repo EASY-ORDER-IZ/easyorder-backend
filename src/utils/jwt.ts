@@ -21,10 +21,13 @@ export class TokenGenerator {
     refreshTtlSeconds: number;
   } {
     const refreshJti = uuidv4();
+    const accessJti = uuidv4(); // new
 
-    const accessToken = jwt.sign({ userId, role }, ACCESS_TOKEN_SECRET, {
-      expiresIn: ACCESS_TOKEN_TTL,
-    });
+    const accessToken = jwt.sign(
+      { jti: accessJti, userId, role, refreshJti }, // jti added
+      ACCESS_TOKEN_SECRET,
+      { expiresIn: ACCESS_TOKEN_TTL }
+    );
 
     const refreshToken = jwt.sign(
       { userId, role, jti: refreshJti },

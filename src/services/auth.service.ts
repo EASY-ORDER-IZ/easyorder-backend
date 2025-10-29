@@ -493,7 +493,9 @@ export class AuthService {
       logger.warn("Logout failed: no refresh token provided");
       throw new CustomError("Refresh token is required", 400, "INVALID_INPUT");
     }
-    await deleteRefreshToken(refreshToken);
+
+    const decoded = await this.tokenGenerator.verifyRefreshToken(refreshToken);
+    await deleteRefreshToken(decoded.jti);
   }
 
   async login(data: LoginRequest): Promise<{

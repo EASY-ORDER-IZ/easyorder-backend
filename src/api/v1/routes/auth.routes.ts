@@ -43,6 +43,7 @@ router.post(
   authenticate(),
   AuthController.logout
 );
+
 router.post(
   "/forgot-password",
   validateSchema(forgotPasswordSchema, null, null),

@@ -157,41 +157,41 @@ export const logoutSchema = z
   })
   .openapi("LogoutRequest");
 
-  export const forgotPasswordSchema = z
+export const forgotPasswordSchema = z
   .object({
     email: z
-    .string()
-    .trim()
-    .email("Invalid email format")
-    .max(255, "Email must not exceed 255 characters"),
+      .string()
+      .trim()
+      .email("Invalid email format")
+      .max(255, "Email must not exceed 255 characters"),
   })
   .openapi("ForgotPasswordRequest");
-  
-  export const resetPasswordSchema = z
+
+export const resetPasswordSchema = z
   .object({
     email: z
-    .string()
-    .trim()
-    .email("Invalid email format")
-    .max(255, "Email must not exceed 255 characters"),
-    
+      .string()
+      .trim()
+      .email("Invalid email format")
+      .max(255, "Email must not exceed 255 characters"),
+
     otpCode: z
-    .string()
-    .trim()
-    .length(6, "OTP code must be exactly 6 characters")
-    .regex(/^\d+$/, "OTP code must contain only digits"),
-    
+      .string()
+      .trim()
+      .length(6, "OTP code must be exactly 6 characters")
+      .regex(/^\d+$/, "OTP code must contain only digits"),
+
     newPassword: z
-    .string()
-    .trim()
-    .min(8, "Password must be at least 8 characters")
+      .string()
+      .trim()
+      .min(8, "Password must be at least 8 characters")
       .regex(
         /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])\S+$/,
         "Password must contain at least one uppercase letter, one number, one special character, and no spaces"
       ),
   })
   .openapi("ResetPasswordRequest");
-  
+
 export type RegisterRequest = z.infer<typeof registerSchema>;
 export type LogoutRequest = z.infer<typeof logoutSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;

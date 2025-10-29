@@ -16,9 +16,8 @@ import { hashOtp, verifyOtp } from "../utils/otp-hasher";
 import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
-import { deleteRefreshToken } from "../utils/redisToken";
+import { deleteRefreshToken , storeRefreshToken } from "../utils/redisToken";
 import { TokenGenerator } from "../utils/jwt";
-import { storeRefreshToken } from "../utils/redisToken";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);

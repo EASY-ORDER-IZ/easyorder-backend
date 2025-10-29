@@ -1,4 +1,5 @@
 import argon2 from "argon2";
+import { MoreThan, IsNull } from "typeorm";
 import { AppDataSource } from "../configs/database";
 import { User } from "../entities/User";
 import { UserRole } from "../entities/UserRole";
@@ -45,7 +46,7 @@ export class AuthService {
     if (existingEmail) {
       throw new CustomError("Email already registered", 409, "EMAIL_EXISTS");
     }
-
+    // ! transaction
     const passwordHash = await argon2.hash(password);
 
     const user = this.userRepository.create({
@@ -58,7 +59,7 @@ export class AuthService {
     const savedUser = await this.userRepository.save(user);
 
     const role = createStore === "yes" ? Role.ADMIN : Role.CUSTOMER;
-
+    // ! cascade insert
     await this.userRoleRepository.save({
       userId: savedUser.id,
       role,
@@ -117,7 +118,7 @@ export class AuthService {
         throw error;
       }
     }
-
+    // ! return user
     return {
       userId: savedUser.id,
       username: savedUser.username,
@@ -187,7 +188,7 @@ export class AuthService {
     const otp = await this.otpRepository.findOne({
       where: {
         userId: user.id,
-        purpose: OtpPurpose.EMAIL_VERIFICATION,
+        purpose: OtpPurpose.EMAIL_VERIFICATION, // ! remove purpose
       },
       order: {
         createdAt: "DESC",
@@ -246,6 +247,224 @@ export class AuthService {
       email: user.email,
       isVerified: true,
       verifiedAt: user.emailVerified.toISOString(),
+    };
+  }
+
+  async resendOtp(email: string): Promise<{
+    email: string;
+    expiresInMinutes: number;
+  }> {
+    const user = await this.userRepository.findOneBy({ email });
+    if (!user) {
+      throw new CustomError(
+        "User not found with this email",
+        404,
+        "USER_NOT_FOUND"
+      );
+    }
+
+    if (user.emailVerified !== null) {
+      throw new CustomError(
+        "Email is already verified",
+        400,
+        "EMAIL_ALREADY_VERIFIED"
+      );
+    }
+
+    if (user.accountStatus !== AccountStatus.PENDING) {
+      throw new CustomError(
+        "Account is not in pending status",
+        400,
+        "INVALID_ACCOUNT_STATUS"
+      );
+    }
+
+    const now = new Date();
+    await this.otpRepository.update(
+      {
+        userId: user.id,
+        purpose: OtpPurpose.EMAIL_VERIFICATION,
+        verifiedAt: IsNull(),
+        expiresAt: MoreThan(now),
+      },
+      {
+        expiresAt: now,
+      }
+    );
+
+    const otpCode = await this.generateOtp(
+      user.id,
+      OtpPurpose.EMAIL_VERIFICATION,
+      env.OTP_EXPIRY_MINUTES
+    );
+
+    try {
+      await this.emailService.sendOtp(email, otpCode);
+      logger.info(`OTP resent successfully to ${email}`);
+    } catch (error) {
+      logger.error(`Failed to send OTP email to ${email}:`, error);
+      throw new CustomError(
+        "Failed to send OTP email. Please try again later.",
+        500,
+        "EMAIL_SEND_FAILED"
+      );
+    }
+
+    return {
+      email: user.email,
+      expiresInMinutes: env.OTP_EXPIRY_MINUTES,
+    };
+  }
+
+  async forgotPassword(email: string): Promise<{
+    email: string;
+    expiresInMinutes: number;
+  }> {
+    const user = await this.userRepository.findOneBy({ email });
+
+    if (!user || user.accountStatus !== AccountStatus.ACTIVE) {
+      logger.warn(`Password reset requested for non-existent email: ${email}`);
+      return {
+        email: email,
+        expiresInMinutes: env.OTP_EXPIRY_MINUTES,
+      };
+    }
+
+    const now = new Date();
+    await this.otpRepository.update(
+      {
+        userId: user.id,
+        purpose: OtpPurpose.PASSWORD_RESET,
+        verifiedAt: IsNull(),
+        expiresAt: MoreThan(now),
+      },
+      {
+        expiresAt: now,
+      }
+    );
+
+    const otpCode = await this.generateOtp(
+      user.id,
+      OtpPurpose.PASSWORD_RESET,
+      env.OTP_EXPIRY_MINUTES
+    );
+
+    try {
+      await this.emailService.sendOtp(email, otpCode);
+      logger.info(`Password reset OTP sent to ${email}`);
+    } catch (error) {
+      logger.error(`Failed to send password reset OTP to ${email}:`, error);
+      throw new CustomError(
+        "Failed to send OTP email. Please try again later.",
+        500,
+        "EMAIL_SEND_FAILED"
+      );
+    }
+
+    return {
+      email: user.email,
+      expiresInMinutes: env.OTP_EXPIRY_MINUTES,
+    };
+  }
+
+  async resetPassword(
+    email: string,
+    otpCode: string,
+    newPassword: string
+  ): Promise<{
+    email: string;
+    message: string;
+    resetAt: string;
+  }> {
+    const user = await this.userRepository.findOneBy({ email });
+    if (!user) {
+      throw new CustomError(
+        "User not found with this email",
+        404,
+        "USER_NOT_FOUND"
+      );
+    }
+
+    if (user.accountStatus !== AccountStatus.ACTIVE) {
+      throw new CustomError(
+        "Account is not active. Please verify your email first.",
+        400,
+        "ACCOUNT_NOT_ACTIVE"
+      );
+    }
+
+    const otp = await this.otpRepository.findOne({
+      where: {
+        userId: user.id,
+        purpose: OtpPurpose.PASSWORD_RESET,
+      },
+      order: {
+        createdAt: "DESC",
+      },
+    });
+
+    if (!otp) {
+      throw new CustomError(
+        "No password reset OTP found. Please request a new one.",
+        400,
+        "OTP_NOT_FOUND"
+      );
+    }
+
+    if (otp.verifiedAt !== null) {
+      throw new CustomError(
+        "This OTP has already been used. Please request a new one.",
+        400,
+        "OTP_ALREADY_USED"
+      );
+    }
+
+    const now = new Date();
+    if (otp.expiresAt < now) {
+      throw new CustomError(
+        "The password reset link is expired. Please request a new one.",
+        400,
+        "OTP_EXPIRED"
+      );
+    }
+
+    const maxAttempts = env.OTP_MAX_ATTEMPTS;
+    if (otp.attemptCount >= maxAttempts) {
+      throw new CustomError(
+        "Maximum OTP verification attempts exceeded. Please request a new one.",
+        400,
+        "OTP_MAX_ATTEMPTS"
+      );
+    }
+
+    const isValid = await verifyOtp(otpCode, otp.otpCode);
+
+    if (!isValid) {
+      otp.attemptCount += 1;
+      await this.otpRepository.save(otp);
+
+      throw new CustomError(
+        "Invalid OTP code. Please check and try again.",
+        400,
+        "INVALID_OTP"
+      );
+    }
+
+    const passwordHash = await argon2.hash(newPassword);
+
+    user.passwordHash = passwordHash;
+    await this.userRepository.save(user);
+
+    otp.verifiedAt = now;
+    otp.attemptCount += 1;
+    await this.otpRepository.save(otp);
+
+    logger.info(`Password reset successful for user: ${email}`);
+
+    return {
+      email: user.email,
+      message: "Password reset successful",
+      resetAt: now.toISOString(),
     };
   }
 

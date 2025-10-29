@@ -7,6 +7,7 @@ export const registerSchema = z
   .object({
     username: z
       .string()
+      .trim()
       .min(2, "Username must be at least 2 characters")
       .max(20, "Username must not exceed 20 characters")
       .regex(
@@ -20,6 +21,7 @@ export const registerSchema = z
 
     email: z
       .string()
+      .trim()
       .email("Invalid email format")
       .max(255, "Email must not exceed 255 characters")
       .openapi({
@@ -29,6 +31,7 @@ export const registerSchema = z
 
     password: z
       .string()
+      .trim()
       .min(8, "Password must be at least 8 characters")
       .regex(
         /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])\S+$/,
@@ -45,6 +48,7 @@ export const registerSchema = z
         /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])\S+$/,
         "Password must contain at least one uppercase letter, one number, one special character, and no spaces"
       )
+      .trim()
       .openapi({
         example: "str0ngP@ssword",
         description: "The confirm password of the user",
@@ -59,6 +63,7 @@ export const registerSchema = z
       }),
     storeName: z
       .string()
+      .trim()
       .min(3, "Store name must be at least 3 characters")
       .max(255, "Store name must not exceed 255 characters")
       .optional()
@@ -103,11 +108,13 @@ export const verifyOtpSchema = z
   .object({
     email: z
       .string()
+      .trim()
       .email("Invalid email format")
       .max(255, "Email must not exceed 255 characters"),
 
     otpCode: z
       .string()
+      .trim()
       .length(6, "OTP code must be exactly 6 characters")
       .regex(/^\d+$/, "OTP code must contain only digits"),
   })
@@ -131,8 +138,55 @@ export const loginResponseSchema = z.object({
     }),
   }),
 });
+export const resendOtpSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .email("Invalid email format")
+      .max(255, "Email must not exceed 255 characters"),
+  })
+  .openapi("ResendOtpRequest");
+
+export const forgotPasswordSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .email("Invalid email format")
+      .max(255, "Email must not exceed 255 characters"),
+  })
+  .openapi("ForgotPasswordRequest");
+
+export const resetPasswordSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .email("Invalid email format")
+      .max(255, "Email must not exceed 255 characters"),
+
+    otpCode: z
+      .string()
+      .trim()
+      .length(6, "OTP code must be exactly 6 characters")
+      .regex(/^\d+$/, "OTP code must contain only digits"),
+
+    newPassword: z
+      .string()
+      .trim()
+      .min(8, "Password must be at least 8 characters")
+      .regex(
+        /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])\S+$/,
+        "Password must contain at least one uppercase letter, one number, one special character, and no spaces"
+      ),
+  })
+  .openapi("ResetPasswordRequest");
 
 export type RegisterRequest = z.infer<typeof registerSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
 export type VerifyOtpRequest = z.infer<typeof verifyOtpSchema>;
 export type loginResponseSchema = z.infer<typeof loginResponseSchema>;
+export type ResendOtpRequest = z.infer<typeof resendOtpSchema>;
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;

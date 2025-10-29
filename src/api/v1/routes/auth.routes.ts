@@ -8,6 +8,7 @@ import {
   verifyOtpSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  refreshTokenSchema,
 } from "../schemas/auth.schema";
 
 const router = Router();
@@ -46,4 +47,9 @@ router.post(
   AuthController.resetPassword
 );
 
+router.post(
+  "/refresh-token",
+  validateSchema(refreshTokenSchema, null, null),
+  AuthController.refreshToken
+);
 export default router;

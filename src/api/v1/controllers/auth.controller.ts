@@ -3,12 +3,14 @@ import type {
   // RegisterRequest,
   VerifyOtpRequest,
   ResendOtpRequest,
+  ForgotPasswordRequest,
 } from "../schemas/auth.schema";
 import type {
   // RegisterResponse,
   ErrorResponse,
   VerifyOtpResponse,
   ResendOtpResponse,
+  ForgotPasswordResponse,
 } from "../responses/auth.response";
 import { AuthService } from "../../../services/auth.service";
 import { CustomError } from "../../../utils/custom-error";
@@ -101,6 +103,40 @@ export class AuthController {
         return;
       }
 
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred.",
+        },
+      });
+    }
+  }
+
+  static async forgotPassword(
+    req: ValidatedRequest,
+    res: Response<ForgotPasswordResponse | ErrorResponse>
+  ): Promise<void> {
+    try {
+      const { email } = req.validatedBody as ForgotPasswordRequest;
+
+      const result = await AuthController.authService.forgotPassword(email);
+
+      res.status(200).json({
+        data: result,
+      });
+    } catch (error) {
+      // 1. Handle CustomError (business logic errors)
+      if (error instanceof CustomError) {
+        res.status(error.statusCode).json({
+          error: {
+            code: error.code ?? "ERROR",
+            message: error.message,
+          },
+        });
+        return;
+      }
+
+      // 2. Handle unexpected errors
       res.status(500).json({
         error: {
           code: "INTERNAL_SERVER_ERROR",

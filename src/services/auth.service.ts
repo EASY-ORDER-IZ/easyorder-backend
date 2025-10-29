@@ -310,6 +310,57 @@ export class AuthService {
     };
   }
 
+  async forgotPassword(email: string): Promise<{
+    email: string;
+    expiresInMinutes: number;
+  }> {
+    const user = await this.userRepository.findOneBy({ email });
+
+    if (!user || user.accountStatus !== AccountStatus.ACTIVE) {
+      logger.warn(`Password reset requested for non-existent email: ${email}`);
+      return {
+        email: email,
+        expiresInMinutes: env.OTP_EXPIRY_MINUTES,
+      };
+    }
+
+    const now = new Date();
+    await this.otpRepository.update(
+      {
+        userId: user.id,
+        purpose: OtpPurpose.PASSWORD_RESET,
+        verifiedAt: IsNull(),
+        expiresAt: MoreThan(now),
+      },
+      {
+        expiresAt: now,
+      }
+    );
+
+    const otpCode = await this.generateOtp(
+      user.id,
+      OtpPurpose.PASSWORD_RESET,
+      env.OTP_EXPIRY_MINUTES
+    );
+
+    try {
+      await this.emailService.sendOtp(email, otpCode);
+      logger.info(`Password reset OTP sent to ${email}`);
+    } catch (error) {
+      logger.error(`Failed to send password reset OTP to ${email}:`, error);
+      throw new CustomError(
+        "Failed to send OTP email. Please try again later.",
+        500,
+        "EMAIL_SEND_FAILED"
+      );
+    }
+
+    return {
+      email: user.email,
+      expiresInMinutes: env.OTP_EXPIRY_MINUTES,
+    };
+  }
+
   async generateOtp(
     userId: string,
     purpose: OtpPurpose,

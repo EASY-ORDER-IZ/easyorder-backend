@@ -493,7 +493,9 @@ export class AuthService {
       logger.warn("Logout failed: no refresh token provided");
       throw new CustomError("Refresh token is required", 400, "INVALID_INPUT");
     }
-    await deleteRefreshToken(refreshToken);
+
+    const decoded = await this.tokenGenerator.verifyRefreshToken(refreshToken);
+    await deleteRefreshToken(decoded.jti);
   }
 
   async login(data: LoginRequest): Promise<{
@@ -570,5 +572,58 @@ export class AuthService {
     }
 
     return await argon2.verify(user.passwordHash, password);
+  }
+
+  async refreshToken(token: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+  }> {
+    try {
+      const decoded = await this.tokenGenerator.verifyRefreshToken(token);
+
+      const user = await this.userRepository.findOne({
+        where: { id: decoded.userId },
+        relations: ["userRoles"],
+      });
+
+      if (!user) {
+        await deleteRefreshToken(decoded.jti);
+        throw new CustomError("User not found", 404, "USER_NOT_FOUND");
+      }
+
+      if (user.accountStatus !== AccountStatus.ACTIVE) {
+        await deleteRefreshToken(decoded.jti);
+        throw new CustomError("Account is not active", 403, "ACCOUNT_INACTIVE");
+      }
+
+      const roles = user.userRoles.map((role) => role.role);
+      let userRole: Role;
+      if (roles.includes(Role.ADMIN)) {
+        userRole = Role.ADMIN;
+      } else {
+        userRole = Role.CUSTOMER;
+      }
+
+      const { accessToken, refreshToken, refreshJti, refreshTtlSeconds } =
+        this.tokenGenerator.generateAuthTokens(user.id, userRole);
+
+      await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
+
+      logger.info(`Tokens successfully refreshed for user ID: ${user.id}`);
+      return {
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      if (error instanceof CustomError) {
+        throw error;
+      }
+      logger.error("Error during token refresh:", error);
+      throw new CustomError(
+        "An unexpected error occurred during token refresh.",
+        500,
+        "REFRESH_FAILED"
+      );
+    }
   }
 }

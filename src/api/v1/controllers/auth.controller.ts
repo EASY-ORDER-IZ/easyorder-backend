@@ -7,6 +7,7 @@ import type {
   LogoutRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  RefreshTokenRequest,
 } from "../schemas/auth.schema";
 import type {
   // RegisterResponse,
@@ -131,6 +132,29 @@ export class AuthController {
 
       res.status(200).json({
         data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async refreshToken(
+    req: ValidatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { refreshToken } = req.validatedBody as RefreshTokenRequest;
+      logger.info("Attempting to refresh token");
+
+      const tokens =
+        await AuthController.authService.refreshToken(refreshToken);
+
+      res.status(200).json({
+        data: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        },
       });
     } catch (error) {
       next(error);

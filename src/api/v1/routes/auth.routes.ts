@@ -9,6 +9,7 @@ import {
   verifyOtpSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  refreshTokenSchema,
 } from "../schemas/auth.schema";
 import { authenticate } from "../../middlewares/auth.middleware";
 
@@ -42,6 +43,7 @@ router.post(
   authenticate(),
   AuthController.logout
 );
+
 router.post(
   "/forgot-password",
   validateSchema(forgotPasswordSchema, null, null),
@@ -54,4 +56,9 @@ router.post(
   AuthController.resetPassword
 );
 
+router.post(
+  "/refresh-token",
+  validateSchema(refreshTokenSchema, null, null),
+  AuthController.refreshToken
+);
 export default router;

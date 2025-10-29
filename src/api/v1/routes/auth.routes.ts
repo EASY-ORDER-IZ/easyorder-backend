@@ -3,6 +3,7 @@ import { AuthController } from "../controllers/auth.controller";
 import { validateSchema } from "../../middlewares/schemaValidator";
 import {
   registerSchema,
+  loginSchema,
   resendOtpSchema,
   verifyOtpSchema,
   forgotPasswordSchema,
@@ -16,7 +17,11 @@ router.post(
   validateSchema(registerSchema, null, null),
   AuthController.register
 );
-
+router.post(
+  "/login",
+  validateSchema(loginSchema, null, null),
+  AuthController.login
+);
 router.post(
   "/verify-otp",
   validateSchema(verifyOtpSchema, null, null),

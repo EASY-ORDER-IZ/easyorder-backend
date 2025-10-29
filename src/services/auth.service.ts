@@ -6,13 +6,18 @@ import { UserRole } from "../entities/UserRole";
 import { OtpCode } from "../entities/OtpCode";
 import { Store } from "../entities/Store";
 import { AccountStatus, OtpPurpose, Role } from "../constants";
-import type { RegisterRequest } from "../api/v1/schemas/auth.schema";
+import type {
+  LoginRequest,
+  RegisterRequest,
+} from "../api/v1/requests/auth.request";
 import { CustomError } from "../utils/custom-error";
 import { generateOtpCode, calculateOtpExpiry } from "../utils/otp-generator";
 import { hashOtp, verifyOtp } from "../utils/otp-hasher";
 import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
+import { TokenGenerator } from "../utils/jwt";
+import { storeRefreshToken } from "../utils/redisToken";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
@@ -20,6 +25,7 @@ export class AuthService {
   private otpRepository = AppDataSource.getRepository(OtpCode);
   private storeRepository = AppDataSource.getRepository(Store);
   private emailService = new EmailService();
+  private tokenGenerator = new TokenGenerator();
 
   async register(data: RegisterRequest): Promise<{
     userId: string;
@@ -481,5 +487,81 @@ export class AuthService {
 
     await this.otpRepository.save(otp);
     return plainOtpCode;
+  }
+
+  async login(data: LoginRequest): Promise<{
+    data: {
+      userId: string;
+      username: string;
+      email: string;
+      role: Role | null;
+      isVerified: boolean;
+      createdAt: string;
+    };
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+    };
+  }> {
+    const user = await this.userRepository.findOne({
+      where: { email: data.email },
+      relations: ["userRoles"],
+    });
+
+    if (!user) {
+      throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
+    }
+
+    const passwordValid = await this.verifyPassword(user.id, data.password);
+    if (!passwordValid) {
+      throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
+    }
+
+    if (user.emailVerified === null) {
+      throw new CustomError("Email not verified", 403, "EMAIL_NOT_VERIFIED");
+    }
+
+    if (user.accountStatus !== AccountStatus.ACTIVE) {
+      throw new CustomError("Account is not active", 403, "ACCOUNT_INACTIVE");
+    }
+
+    const roles = user.userRoles.map((role) => role.role);
+    let userRole: Role;
+    if (roles.includes(Role.ADMIN)) {
+      userRole = Role.ADMIN;
+    } else {
+      userRole = Role.CUSTOMER;
+    }
+
+    const { accessToken, refreshToken, refreshJti, refreshTtlSeconds } =
+      this.tokenGenerator.generateAuthTokens(user.id, userRole);
+
+    await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
+
+    logger.info(`User ${user.email} logged in successfully`);
+
+    return {
+      data: {
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        role: userRole,
+        isVerified: user.accountStatus === AccountStatus.ACTIVE,
+        createdAt: user.createdAt.toISOString(),
+      },
+      tokens: {
+        accessToken,
+        refreshToken,
+      },
+    };
+  }
+
+  async verifyPassword(userId: string, password: string): Promise<boolean> {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user) {
+      throw new CustomError("User not found", 404, "USER_NOT_FOUND");
+    }
+
+    return await argon2.verify(user.passwordHash, password);
   }
 }

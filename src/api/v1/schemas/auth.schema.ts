@@ -65,6 +65,16 @@ export const resendOtpSchema = z
   })
   .openapi("ResendOtpRequest");
 
+export const forgotPasswordSchema = z
+  .object({
+    email: z
+      .string()
+      .email("Invalid email format")
+      .max(255, "Email must not exceed 255 characters"),
+  })
+  .openapi("ForgotPasswordRequest");
+
 export type RegisterRequest = z.infer<typeof registerSchema>;
 export type VerifyOtpRequest = z.infer<typeof verifyOtpSchema>;
 export type ResendOtpRequest = z.infer<typeof resendOtpSchema>;
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;

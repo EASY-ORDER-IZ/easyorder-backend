@@ -4,8 +4,11 @@ import { validateSchema } from "../../middlewares/schemaValidator";
 import {
   logoutSchema,
   registerSchema,
+  loginSchema,
   resendOtpSchema,
   verifyOtpSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from "../schemas/auth.schema";
 import { authenticate } from "../../middlewares/auth.middleware";
 
@@ -16,7 +19,11 @@ router.post(
   validateSchema(registerSchema, null, null),
   AuthController.register
 );
-
+router.post(
+  "/login",
+  validateSchema(loginSchema, null, null),
+  AuthController.login
+);
 router.post(
   "/verify-otp",
   validateSchema(verifyOtpSchema, null, null),
@@ -35,4 +42,16 @@ router.post(
   authenticate(),
   AuthController.logout
 );
+router.post(
+  "/forgot-password",
+  validateSchema(forgotPasswordSchema, null, null),
+  AuthController.forgotPassword
+);
+
+router.post(
+  "/reset-password",
+  validateSchema(resetPasswordSchema, null, null),
+  AuthController.resetPassword
+);
+
 export default router;

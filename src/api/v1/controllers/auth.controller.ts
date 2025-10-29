@@ -1,25 +1,33 @@
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
+import type { LoginRequest } from "../requests/auth.request";
 import type {
   // RegisterRequest,
   VerifyOtpRequest,
   ResendOtpRequest,
   LogoutRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
 } from "../schemas/auth.schema";
 import type {
   // RegisterResponse,
   ErrorResponse,
   VerifyOtpResponse,
   ResendOtpResponse,
+  ForgotPasswordResponse,
+  ResetPasswordResponse,
 } from "../responses/auth.response";
 import { AuthService } from "../../../services/auth.service";
-import { CustomError } from "../../../utils/custom-error";
 import type { ValidatedRequest } from "../../middlewares/schemaValidator";
 import logger from "../../../configs/logger";
 
 export class AuthController {
   private static authService = new AuthService();
 
-  static async register(req: Request, res: Response): Promise<void> {
+  static async register(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const userData = req.body;
 
@@ -29,28 +37,29 @@ export class AuthController {
         data: user,
       });
     } catch (error) {
-      if (error instanceof CustomError) {
-        res.status(error.statusCode).json({
-          error: {
-            code: error.code ?? "ERROR",
-            message: error.message,
-          },
-        });
-        return;
-      }
+      next(error);
+    }
+  }
 
-      res.status(500).json({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: "An unexpected error occurred.",
-        },
+  static async login(req: ValidatedRequest, res: Response, next: NextFunction): Promise<void> {
+    const userData = req.validatedBody as LoginRequest;
+    logger.info(`login attempt for user: ${userData.email}`);
+
+    try {
+      const loginResult = await AuthController.authService.login(userData);
+
+      res.status(200).json({
+        data: loginResult,
       });
+    } catch (error) {
+      next(error);
     }
   }
 
   static async verifyOtp(
     req: ValidatedRequest,
-    res: Response<VerifyOtpResponse | ErrorResponse>
+    res: Response<VerifyOtpResponse | ErrorResponse>,
+    next: NextFunction
   ): Promise<void> {
     try {
       const { email, otpCode } = req.validatedBody as VerifyOtpRequest;
@@ -61,28 +70,14 @@ export class AuthController {
         data: result,
       });
     } catch (error) {
-      if (error instanceof CustomError) {
-        res.status(error.statusCode).json({
-          error: {
-            code: error.code ?? "ERROR",
-            message: error.message,
-          },
-        });
-        return;
-      }
-
-      res.status(500).json({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: "An unexpected error occurred.",
-        },
-      });
+      next(error);
     }
   }
 
   static async resendOtp(
     req: ValidatedRequest,
-    res: Response<ResendOtpResponse | ErrorResponse>
+    res: Response<ResendOtpResponse | ErrorResponse>,
+    next: NextFunction
   ): Promise<void> {
     try {
       const { email } = req.validatedBody as ResendOtpRequest;
@@ -93,26 +88,52 @@ export class AuthController {
         data: result,
       });
     } catch (error) {
-      if (error instanceof CustomError) {
-        res.status(error.statusCode).json({
-          error: {
-            code: error.code ?? "ERROR",
-            message: error.message,
-          },
-        });
-        return;
-      }
-
-      res.status(500).json({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: "An unexpected error occurred.",
-        },
-      });
+      next(error);
     }
   }
 
-  static async logout(req: ValidatedRequest, res: Response): Promise<void> {
+  static async forgotPassword(
+    req: ValidatedRequest,
+    res: Response<ForgotPasswordResponse | ErrorResponse>,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { email } = req.validatedBody as ForgotPasswordRequest;
+
+      const result = await AuthController.authService.forgotPassword(email);
+
+      res.status(200).json({
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async resetPassword(
+    req: ValidatedRequest,
+    res: Response<ResetPasswordResponse | ErrorResponse>,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { email, otpCode, newPassword } =
+        req.validatedBody as ResetPasswordRequest;
+
+      const result = await AuthController.authService.resetPassword(
+        email,
+        otpCode,
+        newPassword
+      );
+
+      res.status(200).json({
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async logout(req: ValidatedRequest, res: Response, next: NextFunction): Promise<void> {
     const { refreshToken } = req.validatedBody as LogoutRequest;
     try {
       await AuthController.authService.logout(refreshToken);
@@ -120,19 +141,7 @@ export class AuthController {
       logger.info(`Refresh token successfully deleted: ${refreshToken}`);
       res.status(200).json({ data: { message: "Logout successful" } });
     } catch (error) {
-      logger.error(`Logout failed for token ${refreshToken}:`, error);
-      if (error instanceof CustomError) {
-        res.status(error.statusCode).json({
-          error: { code: error.code ?? "ERROR", message: error.message },
-        });
-        return;
-      }
-      res.status(500).json({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: "An unexpected error occurred.",
-        },
-      });
+      next(error);
     }
   }
 }

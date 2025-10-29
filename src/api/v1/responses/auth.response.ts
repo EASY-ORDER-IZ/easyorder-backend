@@ -32,6 +32,21 @@ export interface ResendOtpResponse {
   };
 }
 
+export interface ForgotPasswordResponse {
+  data: {
+    email: string;
+    expiresInMinutes: number;
+  };
+}
+
+export interface ResetPasswordResponse {
+  data: {
+    email: string;
+    message: string;
+    resetAt: string;
+  };
+}
+
 export interface ErrorResponse {
   error: {
     code: string;

@@ -38,11 +38,6 @@ export const validateSchema =
       next();
     } catch (err) {
       logger.warn("Validation failed", err);
-      res.status(400).json({
-        success: false,
-        message: "Invalid request data",
-        error: err instanceof Error ? err.message : "Unknown error",
-      });
-      //   next(err);
+      next(err);
     }
   };

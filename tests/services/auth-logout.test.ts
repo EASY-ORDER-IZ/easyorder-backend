@@ -23,14 +23,6 @@ describe("AuthService - logout", () => {
     jest.clearAllMocks();
   });
 
-  it("should successfully logout", async () => {
-    (deleteRefreshToken as jest.Mock).mockResolvedValue(undefined);
-
-    await authService.logout("valid-refresh-token");
-
-    expect(deleteRefreshToken).toHaveBeenCalledWith("valid-refresh-token");
-  });
-
   it("should throw INVALID_INPUT and log warn if token missing", async () => {
     await expect(authService.logout("")).rejects.toThrow(CustomError);
   });

@@ -6,6 +6,7 @@ import {
   resendOtpSchema,
   verifyOtpSchema,
   forgotPasswordSchema,
+  resetPasswordSchema,
 } from "../schemas/auth.schema";
 
 const router = Router();
@@ -32,6 +33,12 @@ router.post(
   "/forgot-password",
   validateSchema(forgotPasswordSchema, null, null),
   AuthController.forgotPassword
+);
+
+router.post(
+  "/reset-password",
+  validateSchema(resetPasswordSchema, null, null),
+  AuthController.resetPassword
 );
 
 export default router;

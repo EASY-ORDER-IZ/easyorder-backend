@@ -4,6 +4,7 @@ import type {
   VerifyOtpRequest,
   ResendOtpRequest,
   ForgotPasswordRequest,
+  ResetPasswordRequest,
 } from "../schemas/auth.schema";
 import type {
   // RegisterResponse,
@@ -11,6 +12,7 @@ import type {
   VerifyOtpResponse,
   ResendOtpResponse,
   ForgotPasswordResponse,
+  ResetPasswordResponse,
 } from "../responses/auth.response";
 import { AuthService } from "../../../services/auth.service";
 import { CustomError } from "../../../utils/custom-error";
@@ -125,7 +127,6 @@ export class AuthController {
         data: result,
       });
     } catch (error) {
-      // 1. Handle CustomError (business logic errors)
       if (error instanceof CustomError) {
         res.status(error.statusCode).json({
           error: {
@@ -136,7 +137,43 @@ export class AuthController {
         return;
       }
 
-      // 2. Handle unexpected errors
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred.",
+        },
+      });
+    }
+  }
+
+  static async resetPassword(
+    req: ValidatedRequest,
+    res: Response<ResetPasswordResponse | ErrorResponse>
+  ): Promise<void> {
+    try {
+      const { email, otpCode, newPassword } =
+        req.validatedBody as ResetPasswordRequest;
+
+      const result = await AuthController.authService.resetPassword(
+        email,
+        otpCode,
+        newPassword
+      );
+
+      res.status(200).json({
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof CustomError) {
+        res.status(error.statusCode).json({
+          error: {
+            code: error.code ?? "ERROR",
+            message: error.message,
+          },
+        });
+        return;
+      }
+
       res.status(500).json({
         error: {
           code: "INTERNAL_SERVER_ERROR",

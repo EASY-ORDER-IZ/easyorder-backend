@@ -40,7 +40,7 @@ export class AuthController {
     }
   }
 
-  static async login(req: ValidatedRequest, res: Response): Promise<void> {
+  static async login(req: ValidatedRequest, res: Response, next: NextFunction): Promise<void> {
     const userData = req.validatedBody as LoginRequest;
     logger.info(`login attempt for user: ${userData.email}`);
 
@@ -51,22 +51,7 @@ export class AuthController {
         data: loginResult,
       });
     } catch (error) {
-      if (error instanceof CustomError) {
-        res.status(error.statusCode).json({
-          error: {
-            code: error.code ?? "ERROR",
-            message: error.message,
-          },
-        });
-        return;
-      }
-
-      res.status(500).json({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: "An unexpected error occurred.",
-        },
-      });
+      next(error);
     }
   }
 

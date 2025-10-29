@@ -6,6 +6,7 @@ import type {
   ResendOtpRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  RefreshTokenRequest,
 } from "../schemas/auth.schema";
 import type {
   // RegisterResponse,
@@ -210,6 +211,43 @@ export class AuthController {
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred.",
+        },
+      });
+    }
+  }
+
+  static async refreshToken(
+    req: ValidatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const { refreshToken } = req.validatedBody as RefreshTokenRequest;
+      logger.info("Attempting to refresh token");
+
+      const tokens =
+        await AuthController.authService.refreshToken(refreshToken);
+
+      res.status(200).json({
+        data: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        },
+      });
+    } catch (error) {
+      if (error instanceof CustomError) {
+        res.status(error.statusCode).json({
+          error: {
+            code: error.code ?? "INVALID_TOKEN",
+            message: error.message,
+          },
+        });
+        return;
+      }
+
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred during token refresh.",
         },
       });
     }

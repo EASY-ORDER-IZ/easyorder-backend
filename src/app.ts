@@ -4,6 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 
 import { notFoundHandler } from "./api/middlewares/notFoundHandler";
+import { errorHandler } from "./api/middlewares/errorHandler";
 import logger from "./configs/logger";
 import v1Routes from "./api/v1/routes";
 import { swaggerDocs } from "./configs/swaggerConfig";
@@ -28,5 +29,7 @@ app.get("/health", (req, res) => {
 app.use("/api/v1", v1Routes);
 
 app.use(notFoundHandler);
+
+app.use(errorHandler);
 
 export default app;

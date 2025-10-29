@@ -16,7 +16,7 @@ import { hashOtp, verifyOtp } from "../utils/otp-hasher";
 import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
-import { deleteRefreshToken , storeRefreshToken } from "../utils/redisToken";
+import { deleteRefreshToken, storeRefreshToken } from "../utils/redisToken";
 import { TokenGenerator } from "../utils/jwt";
 
 export class AuthService {

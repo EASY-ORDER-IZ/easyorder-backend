@@ -135,7 +135,8 @@ export class AuthController {
 
   static async refreshToken(
     req: ValidatedRequest,
-    res: Response
+    res: Response,
+    next: NextFunction
   ): Promise<void> {
     try {
       const { refreshToken } = req.validatedBody as RefreshTokenRequest;
@@ -151,22 +152,7 @@ export class AuthController {
         },
       });
     } catch (error) {
-      if (error instanceof CustomError) {
-        res.status(error.statusCode).json({
-          error: {
-            code: error.code ?? "INVALID_TOKEN",
-            message: error.message,
-          },
-        });
-        return;
-      }
-
-      res.status(500).json({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: "An unexpected error occurred during token refresh.",
-        },
-      });
+      next(error);
     }
   }
 }

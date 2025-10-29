@@ -2,6 +2,7 @@ import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
 import { validateSchema } from "../../middlewares/schemaValidator";
 import {
+  logoutSchema,
   registerSchema,
   loginSchema,
   resendOtpSchema,
@@ -9,6 +10,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
 } from "../schemas/auth.schema";
+import { authenticate } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -34,6 +36,12 @@ router.post(
   AuthController.resendOtp
 );
 
+router.post(
+  "/logout",
+  validateSchema(logoutSchema, null, null),
+  authenticate(),
+  AuthController.logout
+);
 router.post(
   "/forgot-password",
   validateSchema(forgotPasswordSchema, null, null),

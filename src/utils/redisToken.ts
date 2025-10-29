@@ -1,5 +1,6 @@
 import redisClient from "./redisClient";
 import { REDIS_KEY_PREFIXES } from "../constants/redis";
+import { CustomError } from "./custom-error";
 
 const refresh_token_prefix = REDIS_KEY_PREFIXES.REFRESH_TOKEN;
 const blacklist_prefix = REDIS_KEY_PREFIXES.BLACKLIST;
@@ -23,6 +24,14 @@ export async function getRefreshToken(jti: string): Promise<string | null> {
 
 export async function deleteRefreshToken(jti: string): Promise<void> {
   const key = buildKey(refresh_token_prefix, jti);
+  const exists = await redisClient.exists(key);
+  if (!exists) {
+    throw new CustomError(
+      "Invalid refresh token",
+      401,
+      "INVALID_REFRESH_TOKEN"
+    );
+  }
   await redisClient.del(key);
 }
 

@@ -4,6 +4,7 @@ import type {
   // RegisterRequest,
   VerifyOtpRequest,
   ResendOtpRequest,
+  LogoutRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
   RefreshTokenRequest,
@@ -41,7 +42,11 @@ export class AuthController {
     }
   }
 
-  static async login(req: ValidatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async login(
+    req: ValidatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     const userData = req.validatedBody as LoginRequest;
     logger.info(`login attempt for user: ${userData.email}`);
 
@@ -151,6 +156,22 @@ export class AuthController {
           refreshToken: tokens.refreshToken,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async logout(
+    req: ValidatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    const { refreshToken } = req.validatedBody as LogoutRequest;
+    try {
+      await AuthController.authService.logout(refreshToken);
+
+      logger.info(`Refresh token successfully deleted: ${refreshToken}`);
+      res.status(200).json({ data: { message: "Logout successful" } });
     } catch (error) {
       next(error);
     }

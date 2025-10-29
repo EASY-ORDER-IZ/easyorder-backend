@@ -55,11 +55,26 @@ describe("Redis Token Management Utilities", () => {
   });
 
   it("should delete a refresh token using the correct key format", async () => {
+    mockRedisClientInstance.exists.mockResolvedValue(1);
+
     await deleteRefreshToken(JTI);
 
+    expect(mockRedisClientInstance.exists).toHaveBeenCalledWith(
+      `${REDIS_KEY_PREFIXES.REFRESH_TOKEN}_${JTI}`
+    );
     expect(mockRedisClientInstance.del).toHaveBeenCalledWith(
       `${REDIS_KEY_PREFIXES.REFRESH_TOKEN}_${JTI}`
     );
+  });
+
+  it("should throw INVALID_REFRESH_TOKEN if token does not exist", async () => {
+    mockRedisClientInstance.exists.mockResolvedValue(0);
+
+    await expect(deleteRefreshToken(JTI)).rejects.toThrow(
+      expect.objectContaining({ code: "INVALID_REFRESH_TOKEN" })
+    );
+
+    expect(mockRedisClientInstance.del).not.toHaveBeenCalled();
   });
 
   it("should blacklist an access token with the correct key and remaining TTL", async () => {

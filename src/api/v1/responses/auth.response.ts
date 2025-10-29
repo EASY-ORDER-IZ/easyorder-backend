@@ -39,6 +39,14 @@ export interface ForgotPasswordResponse {
   };
 }
 
+export interface ResetPasswordResponse {
+  data: {
+    email: string;
+    message: string;
+    resetAt: string;
+  };
+}
+
 export interface ErrorResponse {
   error: {
     code: string;

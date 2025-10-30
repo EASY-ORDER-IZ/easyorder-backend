@@ -6,21 +6,19 @@ import { CustomError } from "../../utils/custom-error";
 import { isAccessTokenBlacklisted } from "../../utils/redisToken";
 import logger from "../../configs/logger";
 
-interface AuthenticatedRequest extends Request {
-  user?: {
-    userId: string;
-    role: string;
-    jti: string;
-  };
+declare module "express-serve-static-core" {
+  interface Request {
+    user?: {
+      userId: string;
+      role: string;
+      jti: string;
+    };
+  }
 }
 
 export const authenticate =
   (requiredRoles?: string[]) =>
-  async (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const authHeader = req.headers.authorization;
       const jwt_token = authHeader?.split(" ")[1];

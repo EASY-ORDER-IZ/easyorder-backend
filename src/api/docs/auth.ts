@@ -512,6 +512,7 @@ export const registerAuthDocs = (registry: OpenAPIRegistry): void => {
     summary: "Logout user",
     tags: ["Auth"],
     description: `Logs out a user by invalidating their refresh token.`,
+    security: [{ bearerAuth: [] }],
     request: {
       body: {
         required: true,

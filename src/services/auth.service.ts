@@ -500,7 +500,7 @@ export class AuthService {
   }
 
   async login(data: LoginRequest): Promise<{
-    data: {
+    user: {
       userId: string;
       username: string;
       email: string;
@@ -551,7 +551,7 @@ export class AuthService {
     logger.info(`User ${user.email} logged in successfully`);
 
     return {
-      data: {
+      user: {
         userId: user.id,
         username: user.username,
         email: user.email,

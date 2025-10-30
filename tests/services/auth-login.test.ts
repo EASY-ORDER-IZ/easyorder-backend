@@ -75,11 +75,11 @@ describe("AuthService - login", () => {
       password: "password123",
     });
 
-    expect(result).toHaveProperty("data");
-    expect(result.data.userId).toBe(mockUser.id);
-    expect(result.data.email).toBe(mockUser.email);
-    expect(result.data.role).toBe(Role.CUSTOMER);
-    expect(result.data.isVerified).toBe(true);
+    expect(result).toHaveProperty("user");
+    expect(result.user.userId).toBe(mockUser.id);
+    expect(result.user.email).toBe(mockUser.email);
+    expect(result.user.role).toBe(Role.CUSTOMER);
+    expect(result.user.isVerified).toBe(true);
 
     expect(result).toHaveProperty("tokens");
     expect(result.tokens.accessToken).toBe("access-token");
@@ -134,7 +134,7 @@ describe("AuthService - login", () => {
       password: "password123",
     });
 
-    expect(result.data.role).toBe(Role.ADMIN);
+    expect(result.user.role).toBe(Role.ADMIN);
   });
 
   it("should assign CUSTOMER role if user does not have ADMIN role", async () => {
@@ -147,6 +147,6 @@ describe("AuthService - login", () => {
       password: "password123",
     });
 
-    expect(result.data.role).toBe(Role.CUSTOMER);
+    expect(result.user.role).toBe(Role.CUSTOMER);
   });
 });

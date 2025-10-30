@@ -176,4 +176,22 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async getProfile(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+
+      const userProfile = await AuthController.authService.getProfile(userId);
+
+      res.status(200).json({
+        data: userProfile,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

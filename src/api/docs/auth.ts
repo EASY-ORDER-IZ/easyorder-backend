@@ -968,4 +968,180 @@ export const registerAuthDocs = (registry: OpenAPIRegistry): void => {
       },
     },
   });
+
+  registry.registerPath({
+    path: `${authPath}/me`,
+    method: "get",
+    summary: "Get current authenticated user profile",
+    tags: ["Auth"],
+    description:
+      "Returns the profile information of the currently authenticated user. Requires a valid Bearer access token.",
+    security: [{ bearerAuth: [] }],
+    responses: {
+      200: {
+        description: "Successfully retrieved the authenticated user's profile",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  properties: {
+                    id: {
+                      type: "string",
+                      format: "uuid",
+                      example: "9f54dbb2-16ef-4b2e-b8a8-837a3dcbba21",
+                    },
+                    username: {
+                      type: "string",
+                      example: "sarat",
+                    },
+                    email: {
+                      type: "string",
+                      format: "email",
+                      example: "sarat@example.com",
+                    },
+                    accountStatus: {
+                      type: "string",
+                      enum: ["PENDING", "ACTIVE", "SUSPENDED"],
+                      example: "ACTIVE",
+                    },
+                    tenant: {
+                      type: "object",
+                      description:
+                        "The tenant (store) associated with the user",
+                      properties: {
+                        id: {
+                          type: "string",
+                          format: "uuid",
+                          example: "ccf0f6a1-89a4-4b65-a17a-22d4a4f0a1c7",
+                        },
+                        name: {
+                          type: "string",
+                          example: "My Electronics Store",
+                        },
+                      },
+                    },
+                    roles: {
+                      type: "array",
+                      description: "List of roles assigned to the user",
+                      items: {
+                        type: "object",
+                        properties: {
+                          id: {
+                            type: "string",
+                            format: "uuid",
+                            example: "e1b10f57-6f6d-4c62-b3f4-9e44e9cb3a1f",
+                          },
+                          role: {
+                            type: "string",
+                            example: "ADMIN",
+                          },
+                        },
+                      },
+                    },
+                    createdAt: {
+                      type: "string",
+                      format: "date-time",
+                      example: "2025-10-30T10:00:00Z",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      401: {
+        description: "Missing or invalid access token",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                error: {
+                  type: "object",
+                  properties: {
+                    code: { type: "string", example: "AUTH_HEADER_MISSING" },
+                    message: {
+                      type: "string",
+                      example: "Missing or invalid Authorization header",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      403: {
+        description: "Access denied or insufficient permissions",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                error: {
+                  type: "object",
+                  properties: {
+                    code: { type: "string", example: "FORBIDDEN_ROLE" },
+                    message: {
+                      type: "string",
+                      example: "Access denied: insufficient permissions",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      404: {
+        description: "User not found or inactive",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                error: {
+                  type: "object",
+                  properties: {
+                    code: { type: "string", example: "USER_NOT_FOUND" },
+                    message: {
+                      type: "string",
+                      example: "User not found or inactive.",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      500: {
+        description: "Internal server error",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                error: {
+                  type: "object",
+                  properties: {
+                    code: { type: "string", example: "PROFILE_FETCH_FAILED" },
+                    message: {
+                      type: "string",
+                      example:
+                        "An unexpected error occurred while fetching user profile.",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
 };

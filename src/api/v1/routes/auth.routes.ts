@@ -61,4 +61,6 @@ router.post(
   validateSchema(refreshTokenSchema, null, null),
   AuthController.refreshToken
 );
+
+router.get("/me", authenticate(), AuthController.getProfile);
 export default router;

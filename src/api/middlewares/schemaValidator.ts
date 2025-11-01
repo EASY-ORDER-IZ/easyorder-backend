@@ -1,38 +1,31 @@
+import type { ZodSchema } from "zod";
 import type { Request, Response, NextFunction } from "express";
-import type { ZodTypeAny } from "zod";
+
 import logger from "../../configs/logger";
 
-export interface ValidatedRequest extends Request {
-  validatedBody?: unknown;
-  validatedQuery?: unknown;
-  validatedParams?: unknown;
-}
-
-export const validateSchema =
-  <
-    Body extends ZodTypeAny | null,
-    Query extends ZodTypeAny | null,
-    Params extends ZodTypeAny | null,
-  >(
-    bodySchema: Body,
-    querySchema: Query,
-    paramsSchema: Params
-  ) =>
-  (req: ValidatedRequest, res: Response, next: NextFunction): void => {
+export const validate = (
+  body: ZodSchema | null,
+  query: ZodSchema | null,
+  params: ZodSchema | null
+) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       logger.info("Validating schema");
 
-      if (bodySchema) {
-        req.validatedBody = bodySchema.parse(req.body);
+      if (body) {
+        req.body = body.parse(req.body);
       }
 
-      if (querySchema) {
-        req.validatedQuery = querySchema.parse(req.query);
+      if (query) {
+        const parsed = query.parse(req.query);
+        req.query = parsed as typeof req.query;
       }
 
-      if (paramsSchema) {
-        req.validatedParams = paramsSchema.parse(req.params);
+      if (params) {
+        const parsed = params.parse(req.params);
+        req.params = parsed as typeof req.params;
       }
+
       logger.info("Schema validated successfully");
 
       next();
@@ -41,3 +34,4 @@ export const validateSchema =
       next(err);
     }
   };
+};

@@ -24,7 +24,7 @@ export const authenticate = async (
   const authHeader = req.headers.authorization;
   const jwt_token = authHeader?.split(" ")[1];
 
-  if (jwt_token == null || jwt_token === "" || jwt_token === undefined) {
+  if (jwt_token === null || jwt_token === "" || jwt_token === undefined) {
     logger.warn("[AUTH] Missing Authorization header or token");
     return next(
       new CustomError(

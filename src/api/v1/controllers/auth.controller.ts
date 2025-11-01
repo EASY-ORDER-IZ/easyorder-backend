@@ -18,7 +18,6 @@ import type {
   ResetPasswordResponse,
 } from "../responses/auth.response";
 import { AuthService } from "../../../services/auth.service";
-import type { ValidatedRequest } from "../../middlewares/schemaValidator";
 import logger from "../../../configs/logger";
 
 export class AuthController {
@@ -43,11 +42,11 @@ export class AuthController {
   }
 
   static async login(
-    req: ValidatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    const userData = req.validatedBody as LoginRequest;
+    const userData = req.body as LoginRequest;
     logger.info(`login attempt for user: ${userData.email}`);
 
     try {
@@ -62,12 +61,12 @@ export class AuthController {
   }
 
   static async verifyOtp(
-    req: ValidatedRequest,
+    req: Request,
     res: Response<VerifyOtpResponse | ErrorResponse>,
     next: NextFunction
   ): Promise<void> {
     try {
-      const { email, otpCode } = req.validatedBody as VerifyOtpRequest;
+      const { email, otpCode } = req.body as VerifyOtpRequest;
 
       const result = await AuthController.authService.verifyOtp(email, otpCode);
 
@@ -80,12 +79,12 @@ export class AuthController {
   }
 
   static async resendOtp(
-    req: ValidatedRequest,
+    req: Request,
     res: Response<ResendOtpResponse | ErrorResponse>,
     next: NextFunction
   ): Promise<void> {
     try {
-      const { email } = req.validatedBody as ResendOtpRequest;
+      const { email } = req.body as ResendOtpRequest;
 
       const result = await AuthController.authService.resendOtp(email);
 
@@ -98,12 +97,12 @@ export class AuthController {
   }
 
   static async forgotPassword(
-    req: ValidatedRequest,
+    req: Request,
     res: Response<ForgotPasswordResponse | ErrorResponse>,
     next: NextFunction
   ): Promise<void> {
     try {
-      const { email } = req.validatedBody as ForgotPasswordRequest;
+      const { email } = req.body as ForgotPasswordRequest;
 
       const result = await AuthController.authService.forgotPassword(email);
 
@@ -116,13 +115,12 @@ export class AuthController {
   }
 
   static async resetPassword(
-    req: ValidatedRequest,
+    req: Request,
     res: Response<ResetPasswordResponse | ErrorResponse>,
     next: NextFunction
   ): Promise<void> {
     try {
-      const { email, otpCode, newPassword } =
-        req.validatedBody as ResetPasswordRequest;
+      const { email, otpCode, newPassword } = req.body as ResetPasswordRequest;
 
       const result = await AuthController.authService.resetPassword(
         email,
@@ -139,12 +137,12 @@ export class AuthController {
   }
 
   static async refreshToken(
-    req: ValidatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const { refreshToken } = req.validatedBody as RefreshTokenRequest;
+      const { refreshToken } = req.body as RefreshTokenRequest;
       logger.info("Attempting to refresh token");
 
       const tokens =
@@ -162,11 +160,11 @@ export class AuthController {
   }
 
   static async logout(
-    req: ValidatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    const { refreshToken } = req.validatedBody as LogoutRequest;
+    const { refreshToken } = req.body as LogoutRequest;
     try {
       await AuthController.authService.logout(refreshToken);
 

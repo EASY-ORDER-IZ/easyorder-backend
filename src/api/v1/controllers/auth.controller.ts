@@ -1,7 +1,7 @@
 import type { Response } from "express";
 import { AuthService } from "../../../services/auth.service";
 import { CustomError } from "../../../utils/custom-error";
-import { toRegisterResponseDto } from "../dtos/auth.dto";
+import { toRegisterResponseDto } from "../responses/auth.response";
 import type { RegisterRequestType } from "../types";
 
 export class AuthController {

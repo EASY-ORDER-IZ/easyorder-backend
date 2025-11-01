@@ -70,10 +70,8 @@ export class User {
 
   @BeforeInsert()
   async hashPasswordBeforeInsert(): Promise<void> {
-    console.log("passwordHash BEFORE:", this.passwordHash);
     if (this.passwordHash !== undefined && this.passwordHash !== null) {
       this.passwordHash = await argon2.hash(this.passwordHash);
-      console.log("✅ Password hashed!");
     }
   }
 }

@@ -6,16 +6,18 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
-  // BeforeInsert,
+  BeforeInsert,
 } from "typeorm";
 
 import { User } from "./User";
 import { OtpPurpose } from "../constants";
-// import { hashOtp } from "../utils/otp";
+import { hashOtp } from "../utils/otp";
+import { env } from "../configs/envConfig";
 
 @Entity("otp_codes")
 @Index(["userId"])
 export class OtpCode {
+  static readonly EXPIRY_MINUTES = env.OTP_EXPIRY_MINUTES;
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
@@ -47,10 +49,10 @@ export class OtpCode {
   @JoinColumn({ name: "user_id" })
   user!: User;
 
-  // @BeforeInsert()
-  // async hashOtpBeforeInsert(): Promise<void> {
-  //   if (this.otpCode !== undefined && this.otpCode !== null) {
-  //     this.otpCode = await hashOtp(this.otpCode);
-  //   }
-  // }
+  @BeforeInsert()
+  async hashOtpBeforeInsert(): Promise<void> {
+    if (this.otpCode !== undefined && this.otpCode !== null) {
+      this.otpCode = await hashOtp(this.otpCode);
+    }
+  }
 }

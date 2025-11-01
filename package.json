@@ -12,7 +12,7 @@
     "start:dev": "npm run build && cross-env NODE_ENV=dev npm run dev",
     "start:test": "npm run build && cross-env NODE_ENV=test npm run dev",
     "start:prod": "npm run build && cross-env NODE_ENV=prod npm run dev",
-    "test": "jest",
+    "test": "jest --runInBand",
     "clean": "rimraf dist && rimraf scratch && rimraf logs",
     "migration:create": "typeorm-ts-node-commonjs migration:create",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/configs/database.ts",

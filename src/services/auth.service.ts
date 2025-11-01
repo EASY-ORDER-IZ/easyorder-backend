@@ -18,6 +18,7 @@ import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
 import { deleteRefreshToken, storeRefreshToken } from "../utils/redisToken";
 import { TokenGenerator } from "../utils/jwt";
+import type { UserProfileResponse } from "../api/v1/responses/auth.response";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
@@ -499,7 +500,7 @@ export class AuthService {
   }
 
   async login(data: LoginRequest): Promise<{
-    data: {
+    user: {
       userId: string;
       username: string;
       email: string;
@@ -550,7 +551,7 @@ export class AuthService {
     logger.info(`User ${user.email} logged in successfully`);
 
     return {
-      data: {
+      user: {
         userId: user.id,
         username: user.username,
         email: user.email,
@@ -625,5 +626,33 @@ export class AuthService {
         "REFRESH_FAILED"
       );
     }
+  }
+
+  async getProfile(userId: string): Promise<UserProfileResponse> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ["store", "userRoles"],
+    });
+
+    if (!user) {
+      throw new CustomError("User not found", 404, "USER_NOT_FOUND");
+    }
+
+    const roles = user.userRoles.map((r) => r.role);
+    const storeId = user.store ? user.store.id : null;
+    const storeName = user.store ? user.store.name : null;
+
+    return {
+      userId: user.id,
+      username: user.username,
+      email: user.email,
+      roles: roles,
+      store: {
+        storeId,
+        name: storeName,
+      },
+      isVerified: user.accountStatus === AccountStatus.ACTIVE,
+      createdAt: user.createdAt.toISOString(),
+    };
   }
 }

@@ -84,6 +84,7 @@ export const loginSchema = z
     email: z
       .string()
       .email("Invalid email format")
+      .trim()
       .max(255, "Email must not exceed 255 characters")
       .openapi({
         example: "email@gmail.com",
@@ -93,6 +94,7 @@ export const loginSchema = z
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
+      .trim()
       .regex(
         /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])\S+$/,
         "Password must contain at least one uppercase letter, one number, one special character, and no spaces"
@@ -133,8 +135,6 @@ export const loginResponseSchema = z.object({
     tokens: z.object({
       accessToken: z.string(),
       refreshToken: z.string(),
-      accessTokenExpiresIn: z.number(),
-      refreshTokenExpiresIn: z.number(),
     }),
   }),
 });

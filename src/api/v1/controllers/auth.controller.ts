@@ -53,7 +53,7 @@ export class AuthController {
       const loginResult = await AuthController.authService.login(userData);
 
       res.status(200).json({
-        data: loginResult,
+        loginResult,
       });
     } catch (error) {
       next(error);

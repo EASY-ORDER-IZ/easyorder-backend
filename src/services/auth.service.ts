@@ -17,8 +17,11 @@ import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
 import { deleteRefreshToken, storeRefreshToken } from "../utils/redisToken";
-import { TokenGenerator } from "../utils/jwt";
+import { JwtUtil } from "../utils/jwt";
 import type { UserProfileResponse } from "../api/v1/responses/auth.response";
+import { loginResponseSchema } from "../api/v1/schemas/auth.schema";
+import { AuthHelper } from "../helper/auth.helper";
+import { PasswordUtil } from "../utils/password.utils";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
@@ -26,8 +29,9 @@ export class AuthService {
   private otpRepository = AppDataSource.getRepository(OtpCode);
   private storeRepository = AppDataSource.getRepository(Store);
   private emailService = new EmailService();
-  private tokenGenerator = new TokenGenerator();
+  private jwtUtils = new JwtUtil();
 
+  private builder = new AuthHelper();
   async register(data: RegisterRequest): Promise<{
     userId: string;
     username: string;
@@ -495,84 +499,42 @@ export class AuthService {
       throw new CustomError("Refresh token is required", 400, "INVALID_INPUT");
     }
 
-    const decoded = await this.tokenGenerator.verifyRefreshToken(refreshToken);
+    const decoded = await this.jwtUtils.verifyRefreshToken(refreshToken);
     await deleteRefreshToken(decoded.jti);
   }
 
-  async login(data: LoginRequest): Promise<{
-    user: {
-      userId: string;
-      username: string;
-      email: string;
-      role: Role | null;
-      isVerified: boolean;
-      createdAt: string;
-    };
-    tokens: {
-      accessToken: string;
-      refreshToken: string;
-    };
-  }> {
-    const user = await this.userRepository.findOne({
-      where: { email: data.email },
-      relations: ["userRoles"],
-    });
+  async login(data: LoginRequest): Promise<loginResponseSchema> {
+    const user = await this.builder.getValidUser(data);
 
     if (!user) {
       throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
     }
 
-    const passwordValid = await this.verifyPassword(user.id, data.password);
-    if (!passwordValid) {
-      throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
-    }
-
-    if (user.emailVerified === null) {
-      throw new CustomError("Email not verified", 403, "EMAIL_NOT_VERIFIED");
-    }
-
-    if (user.accountStatus !== AccountStatus.ACTIVE) {
-      throw new CustomError("Account is not active", 403, "ACCOUNT_INACTIVE");
-    }
-
-    const roles = user.userRoles.map((role) => role.role);
-    let userRole: Role;
-    if (roles.includes(Role.ADMIN)) {
-      userRole = Role.ADMIN;
-    } else {
-      userRole = Role.CUSTOMER;
-    }
+    let userRole = await this.builder.getUserRole(user);
 
     const { accessToken, refreshToken, refreshJti, refreshTtlSeconds } =
-      this.tokenGenerator.generateAuthTokens(user.id, userRole);
+      this.jwtUtils.generateAuthTokens(user.id, userRole);
 
     await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
 
     logger.info(`User ${user.email} logged in successfully`);
 
     return {
-      user: {
-        userId: user.id,
-        username: user.username,
-        email: user.email,
-        role: userRole,
-        isVerified: user.accountStatus === AccountStatus.ACTIVE,
-        createdAt: user.createdAt.toISOString(),
-      },
-      tokens: {
-        accessToken,
-        refreshToken,
+      data: {
+        user: {
+          userId: user.id,
+          username: user.username,
+          email: user.email,
+          role: userRole,
+          isVerified: user.accountStatus === AccountStatus.ACTIVE,
+          createdAt: user.createdAt.toISOString(),
+        },
+        tokens: {
+          accessToken,
+          refreshToken,
+        },
       },
     };
-  }
-
-  async verifyPassword(userId: string, password: string): Promise<boolean> {
-    const user = await this.userRepository.findOneBy({ id: userId });
-    if (!user) {
-      throw new CustomError("User not found", 404, "USER_NOT_FOUND");
-    }
-
-    return await argon2.verify(user.passwordHash, password);
   }
 
   async refreshToken(token: string): Promise<{
@@ -580,7 +542,7 @@ export class AuthService {
     refreshToken: string;
   }> {
     try {
-      const decoded = await this.tokenGenerator.verifyRefreshToken(token);
+      const decoded = await this.jwtUtils.verifyRefreshToken(token);
 
       const user = await this.userRepository.findOne({
         where: { id: decoded.userId },
@@ -606,7 +568,7 @@ export class AuthService {
       }
 
       const { accessToken, refreshToken, refreshJti, refreshTtlSeconds } =
-        this.tokenGenerator.generateAuthTokens(user.id, userRole);
+        this.jwtUtils.generateAuthTokens(user.id, userRole);
 
       await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
 

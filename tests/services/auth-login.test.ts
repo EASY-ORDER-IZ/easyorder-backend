@@ -75,15 +75,15 @@ describe("AuthService - login", () => {
       password: "password123",
     });
 
-    expect(result).toHaveProperty("user");
-    expect(result.user.userId).toBe(mockUser.id);
-    expect(result.user.email).toBe(mockUser.email);
-    expect(result.user.role).toBe(Role.CUSTOMER);
-    expect(result.user.isVerified).toBe(true);
+    expect(result.data).toHaveProperty("user");
+    expect(result.data.user.userId).toBe(mockUser.id);
+    expect(result.data.user.email).toBe(mockUser.email);
+    expect(result.data.user.role).toBe(Role.CUSTOMER);
+    expect(result.data.user.isVerified).toBe(true);
 
-    expect(result).toHaveProperty("tokens");
-    expect(result.tokens.accessToken).toBe("access-token");
-    expect(result.tokens.refreshToken).toBe("refresh-token");
+    expect(result.data).toHaveProperty("tokens");
+    expect(result.data.tokens.accessToken).toBe("access-token");
+    expect(result.data.tokens.refreshToken).toBe("refresh-token");
 
     expect(storeRefreshToken).toHaveBeenCalledWith(
       "refresh-jti",
@@ -134,7 +134,7 @@ describe("AuthService - login", () => {
       password: "password123",
     });
 
-    expect(result.user.role).toBe(Role.ADMIN);
+    expect(result.data.user.role).toBe(Role.ADMIN);
   });
 
   it("should assign CUSTOMER role if user does not have ADMIN role", async () => {
@@ -147,6 +147,6 @@ describe("AuthService - login", () => {
       password: "password123",
     });
 
-    expect(result.user.role).toBe(Role.CUSTOMER);
+    expect(result.data.user.role).toBe(Role.CUSTOMER);
   });
 });

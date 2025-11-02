@@ -10,7 +10,7 @@ const REFRESH_TOKEN_SECRET = env.JWT_REFRESH_SECRET;
 const ACCESS_TOKEN_TTL = env.ACCESS_TOKEN_TTL_SECONDS;
 const REFRESH_TOKEN_TTL_SECONDS = env.REFRESH_TOKEN_TTL_SECONDS;
 
-export class TokenGenerator {
+export class JwtUtil {
   generateAuthTokens(
     userId: string,
     role: Role

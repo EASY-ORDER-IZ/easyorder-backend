@@ -12,6 +12,8 @@ import {
   refreshTokenSchema,
 } from "../schemas/auth.schema";
 import { authenticate } from "../../middlewares/auth.middleware";
+import { authorizeRoles } from "../../middlewares/authorize.middleware";
+import { Role } from "../../../constants";
 
 const router = Router();
 
@@ -40,7 +42,7 @@ router.post(
 router.post(
   "/logout",
   validateSchema(logoutSchema, null, null),
-  authenticate(),
+  authenticate,
   AuthController.logout
 );
 
@@ -62,5 +64,5 @@ router.post(
   AuthController.refreshToken
 );
 
-router.get("/me", authenticate(), AuthController.getProfile);
+router.get("/me", authenticate, AuthController.getProfile);
 export default router;

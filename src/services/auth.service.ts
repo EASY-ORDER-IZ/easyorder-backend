@@ -19,6 +19,7 @@ import { env } from "../configs/envConfig";
 import { deleteRefreshToken, storeRefreshToken } from "../utils/redisToken";
 import { TokenGenerator } from "../utils/jwt";
 import type { UserProfileResponse } from "../api/v1/responses/auth.response";
+import { StoreHelper } from "./helper/auth.helper";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
@@ -27,6 +28,7 @@ export class AuthService {
   private storeRepository = AppDataSource.getRepository(Store);
   private emailService = new EmailService();
   private tokenGenerator = new TokenGenerator();
+  private storeHelper = StoreHelper;
 
   async register(data: RegisterRequest): Promise<{
     userId: string;
@@ -537,14 +539,16 @@ export class AuthService {
 
     const roles = user.userRoles.map((role) => role.role);
     let userRole: Role;
+    let storeId: string | null = null;
     if (roles.includes(Role.ADMIN)) {
       userRole = Role.ADMIN;
+      storeId = await this.storeHelper.getStoreIdByUserId(user.id);
     } else {
       userRole = Role.CUSTOMER;
     }
 
     const { accessToken, refreshToken, refreshJti, refreshTtlSeconds } =
-      this.tokenGenerator.generateAuthTokens(user.id, userRole);
+      this.tokenGenerator.generateAuthTokens(user.id, userRole, storeId);
 
     await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
 

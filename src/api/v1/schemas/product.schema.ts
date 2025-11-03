@@ -208,8 +208,18 @@ export const filterProductAndPaginationSchema = filterProductsSchema
   })
   .openapi("FilterProductsWithPagination");
 
+export const productIdParamSchema = z
+  .object({
+    productId: z.string().uuid("Product ID must be a valid UUID").openapi({
+      example: "a3f1c2e4-5b6d-7e8f-9012-3456789abcde",
+      description: "Unique identifier for the product",
+    }),
+  })
+  .openapi("ProductIdParamSchema");
+
 export type FilterProductsWithPagination = z.infer<
   typeof filterProductAndPaginationSchema
 >;
 export type CreateProductRequest = z.infer<typeof createProductSchema>;
 export type ProductImageInput = z.infer<typeof productImageSchema>;
+export type ProductIdParam = z.infer<typeof productIdParamSchema>;

@@ -1,15 +1,12 @@
 import type { Response, NextFunction } from "express";
-import type {
-  CreateProductRequestType,
-  GetProductsRequestType,
-} from "../requests/product.request";
+import type { CreateProductRequestType } from "../requests/product.request";
 import type { CreateProductSuccessResponse } from "../responses/product.response";
 import { toProductResponse } from "../responses/product.response";
 import { ProductService } from "../../../services/product.service";
 import logger from "../../../configs/logger";
 import { CustomError } from "../../../utils/custom-error";
-import { ValidatedRequest } from "../../middlewares/schemaValidator";
-import { FilterProductsWithPagination } from "../schemas/product.schema";
+import type { ValidatedRequest } from "../../middlewares/schemaValidator";
+import type { FilterProductsWithPagination } from "../schemas/product.schema";
 
 export class ProductController {
   private static productService = new ProductService();

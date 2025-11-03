@@ -4,6 +4,8 @@ import { validateSchema } from "../../middlewares/schemaValidator";
 import {
   createProductSchema,
   filterProductAndPaginationSchema,
+  productIdParamSchema,
+  updateProductSchema,
 } from "../schemas/product.schema";
 import { authenticate } from "../../middlewares/auth.middleware";
 import { Role } from "../../../constants";
@@ -27,4 +29,11 @@ router.get(
   ProductController.getAll
 );
 
+router.patch(
+  "/:productId",
+  validateSchema(updateProductSchema, null, productIdParamSchema),
+  authenticate,
+  authorizeRoles(Role.ADMIN),
+  ProductController.updateProduct
+);
 export default router;

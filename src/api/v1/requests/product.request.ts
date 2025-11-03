@@ -1,6 +1,13 @@
 import type { Request } from "express";
-import type { CreateProductRequest } from "../schemas/product.schema";
+import type {
+  CreateProductRequest,
+  FilterProductsWithPagination,
+} from "../schemas/product.schema";
 
-export interface CreateProductRequestType extends Request {
+export type CreateProductRequestType = Request & {
   body: CreateProductRequest;
-}
+};
+
+export type GetProductsRequestType = Request & {
+  query: FilterProductsWithPagination;
+};

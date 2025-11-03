@@ -165,4 +165,37 @@ export class ProductService {
       },
     };
   }
+
+  async deleteProduct(
+    storeId: string,
+    userId: string,
+    productId: string
+  ): Promise<void> {
+    const product = await this.productRepository.findOne({
+      where: { id: productId, storeId: storeId },
+    });
+
+    if (product === null || product === undefined) {
+      throw new CustomError(
+        "Product not found in this store",
+        404,
+        "PRODUCT_NOT_FOUND"
+      );
+    }
+
+    if (product.deletedAt) {
+      throw new CustomError(
+        "Product already deleted",
+        400,
+        "PRODUCT_ALREADY_DELETED"
+      );
+    }
+
+    product.deletedAt = new Date();
+    product.updatedBy = userId;
+
+    await this.productRepository.save(product);
+
+    logger.info(`Product with ID: ${productId} deleted from store ${storeId}`);
+  }
 }

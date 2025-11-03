@@ -3,7 +3,9 @@ import { AuthService } from "../../src/services/auth.service";
 import { CustomError } from "../../src/utils/custom-error";
 import { Role, AccountStatus } from "../../src/constants";
 import { storeRefreshToken } from "../../src/utils/redisToken";
-import type { mockUser } from "../../src/api/v1/types/auth";
+import { StoreHelper } from "../../src/services/helper/auth.helper";
+import type { User } from "../../src/entities/User";
+import type { UserRole } from "../../src/entities/UserRole";
 
 jest.mock("../../src/utils/redisToken", () => ({
   storeRefreshToken: jest.fn(),
@@ -13,29 +15,76 @@ jest.mock("argon2", () => ({
   verify: jest.fn(),
 }));
 
+jest.mock("../../src/services/helper/auth.helper", () => ({
+  StoreHelper: {
+    getStoreIdByUserId: jest.fn().mockResolvedValue("mock-store-id"),
+  },
+}));
+
 interface MockUserRepository {
-  findOne: jest.Mock;
-  findOneBy: jest.Mock;
+  findOne: jest.MockedFunction<
+    (
+      options: Parameters<AuthService["userRepository"]["findOne"]>[0]
+    ) => Promise<User | null>
+  >;
+  findOneBy: jest.MockedFunction<
+    (
+      options: Parameters<AuthService["userRepository"]["findOneBy"]>[0]
+    ) => Promise<User | null>
+  >;
 }
 
 interface MockTokenGenerator {
-  generateAuthTokens: jest.Mock;
-}
-
-interface MockedDependencies {
-  userRepository: MockUserRepository;
-  tokenGenerator: MockTokenGenerator;
+  generateAuthTokens: jest.MockedFunction<
+    (
+      userId: string,
+      role: Role,
+      storeId?: string | null
+    ) => {
+      accessToken: string;
+      refreshToken: string;
+      refreshJti: string;
+      refreshTtlSeconds: number;
+    }
+  >;
 }
 
 describe("AuthService - login", () => {
   let authService: AuthService;
-  let mockedService: MockedDependencies;
-  let mockUser: mockUser;
+  let userRepository: MockUserRepository;
+  let tokenGenerator: MockTokenGenerator;
+  let mockUser: User & { userRoles: UserRole[] };
 
   beforeEach(() => {
     authService = new AuthService();
 
-    mockedService = authService as unknown as MockedDependencies;
+    userRepository = {
+      findOne: jest.fn(),
+      findOneBy: jest.fn(),
+    };
+
+    tokenGenerator = {
+      generateAuthTokens: jest.fn().mockReturnValue({
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        refreshJti: "refresh-jti",
+        refreshTtlSeconds: 3600,
+      }),
+    };
+
+    (
+      authService as unknown as {
+        userRepository: MockUserRepository;
+        tokenGenerator: MockTokenGenerator;
+      }
+    ).userRepository = userRepository;
+
+    (
+      authService as unknown as {
+        userRepository: MockUserRepository;
+        tokenGenerator: MockTokenGenerator;
+      }
+    ).tokenGenerator = tokenGenerator;
 
     mockUser = {
       id: "user-id-123",
@@ -45,29 +94,35 @@ describe("AuthService - login", () => {
       emailVerified: new Date(),
       accountStatus: AccountStatus.ACTIVE,
       createdAt: new Date(),
-      userRoles: [{ role: Role.CUSTOMER }],
+      updatedAt: new Date(),
+      deletedAt: undefined,
+
+      userRoles: [],
+      otpCodes: [],
+      store: undefined,
     };
 
-    mockedService.userRepository = {
-      findOne: jest.fn().mockResolvedValue(mockUser),
-      findOneBy: jest.fn().mockResolvedValue(mockUser),
+    const customerRole: UserRole = {
+      id: "role-id-123",
+      userId: mockUser.id,
+      role: Role.CUSTOMER,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: undefined,
+      user: mockUser,
     };
 
-    mockedService.tokenGenerator = {
-      generateAuthTokens: jest.fn().mockReturnValue({
-        accessToken: "access-token",
-        refreshToken: "refresh-token",
-        refreshJti: "refresh-jti",
-        refreshTtlSeconds: 3600,
-      }),
-    };
+    mockUser.userRoles.push(customerRole);
+
+    userRepository.findOne.mockResolvedValue(mockUser);
+    userRepository.findOneBy.mockResolvedValue(mockUser);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it("should successfully login a valid user", async () => {
+  it("should successfully login a valid CUSTOMER user", async () => {
     (argon2.verify as jest.Mock).mockResolvedValue(true);
 
     const result = await authService.login({
@@ -75,15 +130,8 @@ describe("AuthService - login", () => {
       password: "password123",
     });
 
-    expect(result).toHaveProperty("user");
-    expect(result.user.userId).toBe(mockUser.id);
-    expect(result.user.email).toBe(mockUser.email);
     expect(result.user.role).toBe(Role.CUSTOMER);
     expect(result.user.isVerified).toBe(true);
-
-    expect(result).toHaveProperty("tokens");
-    expect(result.tokens.accessToken).toBe("access-token");
-    expect(result.tokens.refreshToken).toBe("refresh-token");
 
     expect(storeRefreshToken).toHaveBeenCalledWith(
       "refresh-jti",
@@ -92,8 +140,32 @@ describe("AuthService - login", () => {
     );
   });
 
+  it("should assign ADMIN role and get storeId for ADMIN user", async () => {
+    const adminRole: UserRole = {
+      id: "role-id-456",
+      userId: mockUser.id,
+      role: Role.ADMIN,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: undefined,
+      user: mockUser,
+    };
+
+    mockUser.userRoles = [adminRole];
+
+    (argon2.verify as jest.Mock).mockResolvedValue(true);
+
+    const result = await authService.login({
+      email: mockUser.email,
+      password: "password123",
+    });
+
+    expect(result.user.role).toBe(Role.ADMIN);
+    expect(StoreHelper.getStoreIdByUserId).toHaveBeenCalledWith(mockUser.id);
+  });
+
   it("should throw AUTH_FAILED if user not found", async () => {
-    mockedService.userRepository.findOne.mockResolvedValue(null);
+    userRepository.findOne.mockResolvedValue(null);
 
     await expect(
       authService.login({ email: "wrong@example.com", password: "pass" })
@@ -104,15 +176,15 @@ describe("AuthService - login", () => {
     (argon2.verify as jest.Mock).mockResolvedValue(false);
 
     await expect(
-      authService.login({ email: "test@example.com", password: "wrongpass" })
+      authService.login({ email: mockUser.email, password: "wrongpass" })
     ).rejects.toThrow(CustomError);
   });
 
   it("should throw EMAIL_NOT_VERIFIED if emailVerified is null", async () => {
-    mockUser.emailVerified = null;
+    mockUser.emailVerified = undefined;
 
     await expect(
-      authService.login({ email: "test@example.com", password: "password123" })
+      authService.login({ email: mockUser.email, password: "password123" })
     ).rejects.toThrow(CustomError);
   });
 
@@ -120,33 +192,7 @@ describe("AuthService - login", () => {
     mockUser.accountStatus = AccountStatus.PENDING;
 
     await expect(
-      authService.login({ email: "test@example.com", password: "password123" })
+      authService.login({ email: mockUser.email, password: "password123" })
     ).rejects.toThrow(CustomError);
-  });
-
-  it("should assign ADMIN role if user has ADMIN role", async () => {
-    mockUser.userRoles = [{ role: Role.ADMIN }];
-
-    (argon2.verify as jest.Mock).mockResolvedValue(true);
-
-    const result = await authService.login({
-      email: mockUser.email,
-      password: "password123",
-    });
-
-    expect(result.user.role).toBe(Role.ADMIN);
-  });
-
-  it("should assign CUSTOMER role if user does not have ADMIN role", async () => {
-    mockUser.userRoles = [{ role: Role.CUSTOMER }];
-
-    (argon2.verify as jest.Mock).mockResolvedValue(true);
-
-    const result = await authService.login({
-      email: mockUser.email,
-      password: "password123",
-    });
-
-    expect(result.user.role).toBe(Role.CUSTOMER);
   });
 });

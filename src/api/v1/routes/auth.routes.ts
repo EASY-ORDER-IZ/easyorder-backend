@@ -40,7 +40,7 @@ router.post(
 router.post(
   "/logout",
   validateSchema(logoutSchema, null, null),
-  authenticate(),
+  authenticate,
   AuthController.logout
 );
 
@@ -62,5 +62,5 @@ router.post(
   AuthController.refreshToken
 );
 
-router.get("/me", authenticate(), AuthController.getProfile);
+router.get("/me", authenticate, AuthController.getProfile);
 export default router;

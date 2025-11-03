@@ -115,4 +115,52 @@ export class ProductController {
       next(error);
     }
   }
+
+  static async delete(
+    req: ValidatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const user = req.user;
+
+      if (user === undefined || user === null) {
+        throw new CustomError(
+          "User not authenticated",
+          401,
+          "USER_NOT_AUTHENTICATED"
+        );
+      }
+
+      const storeId = user.storeId;
+
+      if (storeId === null || storeId === undefined) {
+        throw new CustomError(
+          "Store not found for this user",
+          404,
+          "STORE_NOT_FOUND"
+        );
+      }
+
+      const { productId } = req.validatedParams as { productId: string };
+
+      logger.info(
+        `Deleting product ${productId} for store ${storeId} by user ${user.userId}`
+      );
+
+      await ProductController.productService.deleteProduct(
+        storeId,
+        user.userId,
+        productId
+      );
+
+      logger.info(`Product deleted successfully: ${productId}`);
+
+      res.status(200).json({
+        data: { message: "Product deleted successfully" },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

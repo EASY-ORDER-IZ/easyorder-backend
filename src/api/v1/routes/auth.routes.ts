@@ -12,8 +12,6 @@ import {
   refreshTokenSchema,
 } from "../schemas/auth.schema";
 import { authenticate } from "../../middlewares/auth.middleware";
-import { authorizeRoles } from "../../middlewares/authorize.middleware";
-import { Role } from "../../../constants";
 
 const router = Router();
 

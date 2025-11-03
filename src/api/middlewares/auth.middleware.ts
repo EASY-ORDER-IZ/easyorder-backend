@@ -55,7 +55,12 @@ export const authenticate = async (
       );
     }
 
-    req.user = { userId: payload.userId, role: payload.role, jti: payload.jti, storeId: payload.storeId };
+    req.user = {
+      userId: payload.userId,
+      role: payload.role,
+      jti: payload.jti,
+      storeId: payload.storeId,
+    };
     logger.info(
       `Authenticated request from user ${payload.userId} with role ${payload.role}`
     );

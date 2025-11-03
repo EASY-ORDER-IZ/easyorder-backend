@@ -6,7 +6,7 @@ export class StoreHelper {
 
   static async getStoreIdByUserId(userId: string): Promise<string | null> {
     const store = await this.storeRepository.findOne({
-      where: { ownerId: userId }, 
+      where: { ownerId: userId },
       select: ["id"],
     });
 

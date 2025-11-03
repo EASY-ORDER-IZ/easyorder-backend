@@ -28,6 +28,10 @@ export interface CreateProductSuccessResponse {
   data: ProductResponse;
 }
 
+export interface GetProductSuccessResponse {
+  data: ProductResponse;
+}
+
 export interface ErrorResponse {
   error: {
     code: string;

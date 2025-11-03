@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { ProductController } from "../controllers/product.controller";
 import { validateSchema } from "../../middlewares/schemaValidator";
-import { createProductSchema } from "../schemas/product.schema";
+import {
+  createProductSchema,
+  getProductByIdSchema,
+} from "../schemas/product.schema";
 import { authenticate } from "../../middlewares/auth.middleware";
 import { Role } from "../../../constants";
 import { authorizeRoles } from "../../middlewares/authorize.middleware";
@@ -16,4 +19,11 @@ router.post(
   ProductController.create
 );
 
+router.get(
+  "/:productId",
+  authenticate,
+  authorizeRoles(Role.ADMIN),
+  validateSchema(null, null, getProductByIdSchema),
+  ProductController.getById
+);
 export default router;

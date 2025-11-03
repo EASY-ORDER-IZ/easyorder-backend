@@ -44,15 +44,19 @@ export class TokenGenerator {
     };
   }
 
-  async verifyRefreshToken(
-    token: string
-  ): Promise<{ userId: string; role: Role; jti: string }> {
+  async verifyRefreshToken(token: string): Promise<{
+    userId: string;
+    role: Role;
+    jti: string;
+    storeId: string | null;
+  }> {
     try {
       const decoded = jwt.verify(token, REFRESH_TOKEN_SECRET) as {
         userId: string;
         role: Role;
         jti: string;
         exp: number;
+        storeId: string | null;
       };
 
       if (!decoded?.jti) {
@@ -75,6 +79,7 @@ export class TokenGenerator {
       return {
         userId: decoded.userId,
         role: decoded.role,
+        storeId: decoded.storeId ?? null,
         jti: decoded.jti,
       };
     } catch (error) {

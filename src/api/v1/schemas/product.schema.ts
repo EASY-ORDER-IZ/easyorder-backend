@@ -77,19 +77,22 @@ export const createProductSchema = z
       .array(productImageSchema)
       .min(1, "At least one image is required")
       .max(10, "Maximum 10 images allowed")
-      .optional()
       .openapi({
         description: "Array of product images",
       }),
   })
   .refine(
     (data) => {
-      if (!data.images || data.images.length === 0) return true;
+      if (data.images.length === 1) {
+        return data.images[0].isPrimary === true;
+      }
+
       const primaryCount = data.images.filter((img) => img.isPrimary).length;
-      return primaryCount <= 1;
+      return primaryCount === 1;
     },
     {
-      message: "Only one image can be marked as primary",
+      message:
+        "If one image: it must be primary. If multiple images: exactly one must be primary",
       path: ["images"],
     }
   )

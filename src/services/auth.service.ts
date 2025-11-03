@@ -518,8 +518,6 @@ export class AuthService {
       relations: ["userRoles"],
     });
 
-    console.log(user);
-
     if (!user) {
       throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
     }
@@ -546,7 +544,7 @@ export class AuthService {
     }
 
     const { accessToken, refreshToken, refreshJti, refreshTtlSeconds } =
-      this.tokenGenerator.generateAuthTokens(user.id, userRole, user.store?.id);
+      this.tokenGenerator.generateAuthTokens(user.id, userRole);
 
     await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
 

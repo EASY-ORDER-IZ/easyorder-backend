@@ -13,7 +13,8 @@ const REFRESH_TOKEN_TTL_SECONDS = env.REFRESH_TOKEN_TTL_SECONDS;
 export class TokenGenerator {
   generateAuthTokens(
     userId: string,
-    role: Role
+    role: Role,
+    storeId?: string
   ): {
     accessToken: string;
     refreshToken: string;
@@ -24,13 +25,13 @@ export class TokenGenerator {
     const accessJti = uuidv4(); // new
 
     const accessToken = jwt.sign(
-      { jti: accessJti, userId, role, refreshJti }, // jti added
+      { jti: accessJti, userId, role, refreshJti, storeId }, // jti added
       ACCESS_TOKEN_SECRET,
       { expiresIn: ACCESS_TOKEN_TTL }
     );
 
     const refreshToken = jwt.sign(
-      { userId, role, jti: refreshJti },
+      { userId, role, jti: refreshJti, storeId }, // jti added
       REFRESH_TOKEN_SECRET,
       { expiresIn: REFRESH_TOKEN_TTL_SECONDS }
     );

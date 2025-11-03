@@ -2,7 +2,10 @@ import { AppDataSource } from "../configs/database";
 import { Product } from "../entities/Product";
 import { ProductImage } from "../entities/ProductImage";
 import { Store } from "../entities/Store";
-import type { CreateProductRequest } from "../api/v1/schemas/product.schema";
+import type {
+  CreateProductRequest,
+  FilterProductsWithPagination,
+} from "../api/v1/schemas/product.schema";
 import { CustomError } from "../utils/custom-error";
 import logger from "../configs/logger";
 
@@ -16,7 +19,7 @@ export class ProductService {
     userId: string,
     productData: CreateProductRequest
   ): Promise<Product> {
-    const store = await this.storeRepository.findOne({
+    const store = await this.storeRepository.exists({
       where: { id: storeId, ownerId: userId },
     });
 
@@ -74,5 +77,92 @@ export class ProductService {
     }
 
     return productWithImages;
+  }
+
+  async getAllProducts(
+    storeId: string,
+    userId: string,
+    query: FilterProductsWithPagination
+  ): Promise<{
+    products: Product[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
+    const {
+      name,
+      size,
+      price,
+      minPrice,
+      maxPrice,
+      sortBy,
+      sortOrder,
+      page = 1,
+      limit = 10,
+    } = query;
+
+    const store = await this.storeRepository.exists({
+      where: { id: storeId, ownerId: userId },
+    });
+
+    if (!store) {
+      throw new CustomError(
+        "Store not found or you don't have permission to view products",
+        404,
+        "STORE_NOT_FOUND"
+      );
+    }
+
+    const qb = this.productRepository
+      .createQueryBuilder("product")
+      .leftJoinAndSelect("product.images", "images")
+      .where("product.storeId = :storeId", { storeId });
+
+    if (name !== undefined && name !== null) {
+      qb.andWhere("LOWER(product.name) LIKE :name", {
+        name: `%${name.toLowerCase()}%`,
+      });
+    }
+    if (size && size.length > 0) {
+      qb.andWhere("product.size IN (:...sizes)", { sizes: size });
+    }
+    if (price !== undefined && price !== null) {
+      qb.andWhere("product.price = :price", { price });
+    }
+    if (minPrice !== undefined && minPrice !== null) {
+      qb.andWhere("product.price >= :minPrice", { minPrice });
+    }
+    if (maxPrice !== undefined && maxPrice !== null) {
+      qb.andWhere("product.price <= :maxPrice", { maxPrice });
+    }
+
+    const orderBy = sortBy;
+    const orderDirection = sortOrder === "asc" ? "ASC" : "DESC";
+    qb.orderBy(`product.${orderBy}`, orderDirection);
+
+    const take = Number(limit);
+    const skip = (Number(page) - 1) * take;
+    qb.skip(skip).take(take);
+
+    const [products, total] = await qb.getManyAndCount();
+
+    logger.debug(
+      `Fetched ${products.length} products for store ${storeId} (page ${page}/${Math.ceil(
+        total / take
+      )})`
+    );
+
+    return {
+      products,
+      pagination: {
+        page: Number(page),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take),
+      },
+    };
   }
 }

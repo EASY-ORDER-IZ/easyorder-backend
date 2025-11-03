@@ -24,6 +24,7 @@ export const validateSchema =
 
       if (bodySchema) {
         req.validatedBody = bodySchema.parse(req.body);
+        req.body = bodySchema.parse(req.body);
       }
 
       if (querySchema) {

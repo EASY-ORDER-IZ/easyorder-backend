@@ -7,9 +7,11 @@ import {
   DeleteDateColumn,
   OneToOne,
   JoinColumn,
+  OneToMany,
 } from "typeorm";
 
 import { User } from "./User";
+import { Product } from "./Product";
 
 @Entity("stores")
 export class Store {
@@ -43,4 +45,7 @@ export class Store {
   @OneToOne(() => User, (user) => user.store)
   @JoinColumn({ name: "owner_id" })
   owner!: User;
+
+  @OneToMany(() => Product, (product) => product.store)
+  products!: Product[];
 }

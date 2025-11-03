@@ -5,6 +5,8 @@ import { User } from "../entities/User";
 import { UserRole } from "../entities/UserRole";
 import { Store } from "../entities/Store";
 import { OtpCode } from "../entities/OtpCode";
+import { Product } from "../entities/Product";
+import { ProductImage } from "../entities/ProductImage";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -14,6 +16,6 @@ export const AppDataSource = new DataSource({
   password: env.POSTGRES_PASSWORD,
   database: env.POSTGRES_DB,
   synchronize: false,
-  entities: [User, UserRole, Store, OtpCode],
+  entities: [User, UserRole, Store, OtpCode, Product, ProductImage],
   migrations: ["src/database/migrations/*.ts"],
 });

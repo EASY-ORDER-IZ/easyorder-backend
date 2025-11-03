@@ -6,7 +6,11 @@ import { ProductService } from "../../../services/product.service";
 import logger from "../../../configs/logger";
 import { CustomError } from "../../../utils/custom-error";
 import type { ValidatedRequest } from "../../middlewares/schemaValidator";
-import type { FilterProductsWithPagination } from "../schemas/product.schema";
+import type {
+  FilterProductsWithPagination,
+  ProductIdParam,
+  UpdateProductRequest,
+} from "../schemas/product.schema";
 
 export class ProductController {
   private static productService = new ProductService();
@@ -112,6 +116,49 @@ export class ProductController {
         },
       });
     } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateProduct(
+    req: ValidatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { productId } = req.validatedParams as ProductIdParam;
+      const updateData = req.validatedBody as UpdateProductRequest;
+      const userId = req.user?.userId;
+
+      if (userId === undefined || userId === null) {
+        throw new CustomError("User not authenticated", 401, "UNAUTHORIZED");
+      }
+      const storeId = req.user?.storeId;
+
+      if (storeId === undefined || storeId === null) {
+        throw new CustomError(
+          "Store not found for this user",
+          404,
+          "STORE_NOT_FOUND"
+        );
+      }
+
+      logger.info(`Updating product ${productId} by user ${userId}`);
+
+      const updatedProduct =
+        await ProductController.productService.updateProduct(
+          productId,
+          storeId,
+          userId,
+          updateData
+        );
+
+      res.status(200).json({
+        data: updatedProduct,
+        message: "Product updated successfully",
+      });
+    } catch (error) {
+      logger.error("Error updating product:", error);
       next(error);
     }
   }

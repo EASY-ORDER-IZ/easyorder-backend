@@ -3,6 +3,7 @@ import { ProductController } from "../controllers/product.controller";
 import { validateSchema } from "../../middlewares/schemaValidator";
 import {
   createProductSchema,
+  getProductByIdSchema,
   filterProductAndPaginationSchema,
 } from "../schemas/product.schema";
 import { authenticate } from "../../middlewares/auth.middleware";
@@ -17,6 +18,14 @@ router.post(
   authenticate,
   authorizeRoles(Role.ADMIN),
   ProductController.create
+);
+
+router.get(
+  "/:productId",
+  authenticate,
+  authorizeRoles(Role.ADMIN),
+  validateSchema(null, null, getProductByIdSchema),
+  ProductController.getById
 );
 
 router.get(

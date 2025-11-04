@@ -1,6 +1,12 @@
 import type { Response, NextFunction } from "express";
-import type { CreateProductRequestType } from "../requests/product.request";
-import type { CreateProductSuccessResponse } from "../responses/product.response";
+import type {
+  CreateProductRequestType,
+  GetProductByIdRequestType,
+} from "../requests/product.request";
+import type {
+  CreateProductSuccessResponse,
+  GetProductSuccessResponse,
+} from "../responses/product.response";
 import { toProductResponse } from "../responses/product.response";
 import { ProductService } from "../../../services/product.service";
 import logger from "../../../configs/logger";
@@ -54,6 +60,40 @@ export class ProductController {
       const productResponse = toProductResponse(product);
 
       res.status(201).json({
+        data: productResponse,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getById(
+    req: GetProductByIdRequestType,
+    res: Response<GetProductSuccessResponse>,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { productId } = req.params;
+
+      const user = req.user;
+
+      if (!user) {
+        throw new CustomError(
+          "User not authenticated",
+          401,
+          "USER_NOT_AUTHENTICATED"
+        );
+      }
+
+      const product = await ProductController.productService.getProductById(
+        productId,
+        user.userId,
+        user.storeId
+      );
+
+      const productResponse = toProductResponse(product);
+
+      res.status(200).json({
         data: productResponse,
       });
     } catch (error) {

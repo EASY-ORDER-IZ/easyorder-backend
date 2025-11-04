@@ -10,3 +10,7 @@ export interface CreateProductRequestType extends Request {
 export interface GetProductByIdRequestType extends Request {
   params: GetProductByIdParams;
 }
+
+export interface DeleteProductRequestType extends Request {
+  params: GetProductByIdParams;
+}

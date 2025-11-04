@@ -29,8 +29,6 @@ export class ProductService {
       );
     }
 
-    logger.debug(`Creating product "${productData.name}" for store ${storeId}`);
-
     const product = this.productRepository.create({
       storeId: storeId,
       name: productData.name,
@@ -111,5 +109,47 @@ export class ProductService {
     }
 
     return product;
+  }
+
+  async softDeleteProduct(
+    productId: string,
+    userId: string,
+    userStoreId?: string
+  ): Promise<{ productId: string; deletedAt: string }> {
+    if (userStoreId === null || userStoreId === undefined) {
+      throw new CustomError("Store not found for this user", 403, "FORBIDDEN");
+    }
+
+    const product = await this.productRepository.findOne({
+      where: {
+        id: productId,
+        deletedAt: IsNull(),
+      },
+    });
+
+    if (!product) {
+      throw new CustomError("Product not found", 404, "PRODUCT_NOT_FOUND");
+    }
+
+    if (product.storeId !== userStoreId) {
+      throw new CustomError(
+        "You don't have permission to delete this product",
+        403,
+        "FORBIDDEN"
+      );
+    }
+
+    const now = new Date();
+    product.deletedAt = now;
+    product.updatedBy = userId;
+
+    await this.productRepository.save(product);
+
+    await this.productImageRepository.softDelete({ productId });
+
+    return {
+      productId: productId,
+      deletedAt: now.toISOString(),
+    };
   }
 }

@@ -1,10 +1,12 @@
 import type { Response, NextFunction } from "express";
 import type {
   CreateProductRequestType,
+  DeleteProductRequestType,
   GetProductByIdRequestType,
 } from "../requests/product.request";
 import type {
   CreateProductSuccessResponse,
+  DeleteProductSuccessResponse,
   GetProductSuccessResponse,
 } from "../responses/product.response";
 import { toProductResponse } from "../responses/product.response";
@@ -42,10 +44,6 @@ export class ProductController {
           "STORE_NOT_FOUND"
         );
       }
-
-      logger.info(
-        `Creating product for store ${storeId} by user ${user.userId}`
-      );
 
       const product = await ProductController.productService.createProduct(
         storeId,
@@ -93,6 +91,48 @@ export class ProductController {
 
       res.status(200).json({
         data: productResponse,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async softDelete(
+    req: DeleteProductRequestType,
+    res: Response<DeleteProductSuccessResponse>,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { productId } = req.params;
+
+      const user = req.user;
+
+      if (user === null || user === undefined) {
+        throw new CustomError(
+          "User not authenticated",
+          401,
+          "USER_NOT_AUTHENTICATED"
+        );
+      }
+
+      logger.info(
+        `ADMIN user ${user.userId} soft deleting product: ${productId}`
+      );
+
+      const result = await ProductController.productService.softDeleteProduct(
+        productId,
+        user.userId,
+        user.storeId
+      );
+
+      logger.info(`Product soft deleted successfully: ${productId}`);
+
+      res.status(200).json({
+        message: "Product successfully deleted",
+        data: {
+          productId: result.productId,
+          deletedAt: result.deletedAt,
+        },
       });
     } catch (error) {
       next(error);

@@ -1,5 +1,9 @@
 import { z } from "zod";
+import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 import { ProductSize } from "../../../constants";
+import { paginationSchema } from "./pagination.schema";
+
+extendZodWithOpenApi(z);
 
 const productImageSchema = z.object({
   imageName: z
@@ -107,6 +111,115 @@ export const getProductByIdSchema = z
   })
   .openapi("GetProductByIdParams");
 
+export const filterProductsSchema = z
+  .object({
+    name: z
+      .string()
+      .max(255, "Name filter must not exceed 255 characters")
+      .optional()
+      .openapi({
+        example: "T-Shirt",
+        description: "Filter products by name ",
+      }),
+
+    size: z
+      .union([
+        z.array(
+          z.enum([
+            ProductSize.XSMALL,
+            ProductSize.SMALL,
+            ProductSize.MEDIUM,
+            ProductSize.LARGE,
+            ProductSize.XLARGE,
+          ])
+        ),
+        z.enum([
+          ProductSize.XSMALL,
+          ProductSize.SMALL,
+          ProductSize.MEDIUM,
+          ProductSize.LARGE,
+          ProductSize.XLARGE,
+        ]),
+      ])
+      .transform((val) => (Array.isArray(val) ? val : [val]))
+      .optional()
+
+      .openapi({
+        example: [ProductSize.SMALL, ProductSize.MEDIUM],
+        description: "Filter by one or more sizes (optional)",
+      }),
+
+    price: z
+      .string()
+      .transform((val) => parseInt(val))
+      .refine((val) => !isNaN(val) && val > 0, {
+        message: "Price must be a positive number",
+      })
+      .optional(),
+
+    minPrice: z
+      .string()
+      .transform((val) => parseInt(val))
+      .refine((val) => !isNaN(val) && val > 0, {
+        message: "Price must be a positive number",
+      })
+      .optional(),
+
+    maxPrice: z
+      .string()
+      .transform((val) => parseInt(val))
+      .refine((val) => !isNaN(val) && val > 0, {
+        message: "Price must be a positive number",
+      })
+      .optional(),
+
+    sortBy: z
+      .enum(["name", "price", "stock", "createdAt"])
+      .default("price")
+      .optional(),
+
+    sortOrder: z.enum(["asc", "desc"]).default("desc").optional(),
+  })
+  .strict()
+  .openapi("GetAllProductsQuery");
+
+export const filterProductAndPaginationSchema = filterProductsSchema
+  .merge(paginationSchema)
+  .strict()
+  .superRefine((data, ctx) => {
+    if (
+      data.price !== null &&
+      data.price !== undefined &&
+      ((data.minPrice !== null && data.minPrice !== undefined) ||
+        (data.maxPrice !== null && data.maxPrice !== undefined))
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Use either price OR minPrice/maxPrice, not both.",
+        path: ["price"],
+      });
+    }
+
+    if (
+      data.minPrice !== null &&
+      data.minPrice !== undefined &&
+      data.maxPrice !== null &&
+      data.maxPrice !== undefined
+    ) {
+      if (data.minPrice > data.maxPrice) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "maxPrice must be more than the minPrice",
+          path: ["maxPrice"],
+        });
+      }
+    }
+  })
+  .openapi("FilterProductsWithPagination");
+
+export type FilterProductsWithPagination = z.infer<
+  typeof filterProductAndPaginationSchema
+>;
 export type CreateProductRequest = z.infer<typeof createProductSchema>;
 export type ProductImageInput = z.infer<typeof productImageSchema>;
 export type GetProductByIdParams = z.infer<typeof getProductByIdSchema>;

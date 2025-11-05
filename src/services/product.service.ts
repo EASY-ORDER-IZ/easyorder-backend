@@ -63,6 +63,7 @@ export class ProductService {
     );
 
     const productWithImages = await this.productRepository.findOne({
+      // here
       where: { id: savedProduct.id },
       relations: ["images"],
     });

@@ -85,9 +85,9 @@ export class AuthController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { email } = req.validatedBody as ResendOtpRequest;
+      const { email, purpose } = req.validatedBody as ResendOtpRequest;
 
-      const result = await AuthController.authService.resendOtp(email);
+      const result = await AuthController.authService.resendOtp(email, purpose);
 
       res.status(200).json({
         data: result,

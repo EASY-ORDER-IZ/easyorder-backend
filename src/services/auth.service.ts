@@ -253,7 +253,10 @@ export class AuthService {
     };
   }
 
-  async resendOtp(email: string): Promise<{
+  async resendOtp(
+    email: string,
+    purpose: OtpPurpose
+  ): Promise<{
     email: string;
     expiresInMinutes: number;
   }> {
@@ -266,27 +269,18 @@ export class AuthService {
       );
     }
 
-    if (user.emailVerified !== null) {
-      throw new CustomError(
-        "Email is already verified",
-        400,
-        "EMAIL_ALREADY_VERIFIED"
-      );
-    }
-
-    if (user.accountStatus !== AccountStatus.PENDING) {
-      throw new CustomError(
-        "Account is not in pending status",
-        400,
-        "INVALID_ACCOUNT_STATUS"
-      );
+    if (
+      purpose === OtpPurpose.EMAIL_VERIFICATION &&
+      user.emailVerified !== null
+    ) {
+      throw new CustomError("Email is already verified", 400);
     }
 
     const now = new Date();
     await this.otpRepository.update(
       {
         userId: user.id,
-        purpose: OtpPurpose.EMAIL_VERIFICATION,
+        purpose: purpose,
         verifiedAt: IsNull(),
         expiresAt: MoreThan(now),
       },
@@ -297,7 +291,7 @@ export class AuthService {
 
     const otpCode = await this.generateOtp(
       user.id,
-      OtpPurpose.EMAIL_VERIFICATION,
+      purpose,
       env.OTP_EXPIRY_MINUTES
     );
 

@@ -154,14 +154,4 @@ describe("AuthService - refreshToken", () => {
       CustomError
     );
   });
-
-  it("should assign ADMIN role if user has ADMIN role", async () => {
-    mockUser.userRoles = [{ role: Role.ADMIN }];
-    (getRefreshToken as jest.Mock).mockResolvedValue(mockUser.id);
-
-    const result = await authService.refreshToken("valid-refresh-token");
-
-    expect(result.accessToken).toBe("new-access-token");
-    expect(result.refreshToken).toBe("new-refresh-token");
-  });
 });

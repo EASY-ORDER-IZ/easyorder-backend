@@ -102,6 +102,15 @@ export const createProductSchema = z
   )
   .openapi("CreateProductRequest");
 
+export const getProductByIdSchema = z
+  .object({
+    productId: z.string().uuid("Product ID must be a valid UUID").openapi({
+      example: "550e8400-e29b-41d4-a716-446655440000",
+      description: "Product UUID",
+    }),
+  })
+  .openapi("GetProductByIdParams");
+
 export const filterProductsSchema = z
   .object({
     name: z
@@ -228,3 +237,4 @@ export type CreateProductRequest = z.infer<typeof createProductSchema>;
 export type ProductImageInput = z.infer<typeof productImageSchema>;
 export type UpdateProductRequest = z.infer<typeof updateProductSchema>;
 export type ProductIdParam = z.infer<typeof productIdParamSchema>;
+export type GetProductByIdParams = z.infer<typeof getProductByIdSchema>;

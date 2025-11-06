@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
+import { OtpPurpose } from "../../../constants";
 
 extendZodWithOpenApi(z);
 
@@ -145,6 +146,7 @@ export const resendOtpSchema = z
       .trim()
       .email("Invalid email format")
       .max(255, "Email must not exceed 255 characters"),
+    purpose: z.nativeEnum(OtpPurpose),
   })
   .openapi("ResendOtpRequest");
 

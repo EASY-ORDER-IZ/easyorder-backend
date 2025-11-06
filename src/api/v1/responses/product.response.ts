@@ -32,6 +32,14 @@ export interface GetProductSuccessResponse {
   data: ProductResponse;
 }
 
+export interface DeleteProductSuccessResponse {
+  message: string;
+  data: {
+    productId: string;
+    deletedAt: string;
+  };
+}
+
 export interface ErrorResponse {
   error: {
     code: string;

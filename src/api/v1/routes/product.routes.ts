@@ -30,6 +30,14 @@ router.get(
   ProductController.getById
 );
 
+router.delete(
+  "/:productId",
+  authenticate,
+  authorizeRoles(Role.ADMIN),
+  validateSchema(null, null, getProductByIdSchema),
+  ProductController.softDelete
+);
+
 router.get(
   "/",
   validateSchema(null, filterProductAndPaginationSchema, null),

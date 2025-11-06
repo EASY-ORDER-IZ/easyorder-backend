@@ -597,14 +597,16 @@ export class AuthService {
 
       const roles = user.userRoles.map((role) => role.role);
       let userRole: Role;
+      let storeId: string | null = null;
       if (roles.includes(Role.ADMIN)) {
         userRole = Role.ADMIN;
+        storeId = await this.storeHelper.getStoreIdByUserId(user.id);
       } else {
         userRole = Role.CUSTOMER;
       }
 
       const { accessToken, refreshToken, refreshJti, refreshTtlSeconds } =
-        this.tokenGenerator.generateAuthTokens(user.id, userRole);
+        this.tokenGenerator.generateAuthTokens(user.id, userRole, storeId);
 
       await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
 

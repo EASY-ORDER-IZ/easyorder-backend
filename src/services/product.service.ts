@@ -202,4 +202,81 @@ export class ProductService {
       },
     };
   }
+
+  async updateProduct(
+    productId: string,
+    storeId: string,
+    userId: string,
+    updateData: Partial<CreateProductRequest>
+  ): Promise<Product> {
+    const storeExists = await this.storeRepository.exists({
+      where: { id: storeId, ownerId: userId },
+    });
+
+    if (!storeExists) {
+      throw new CustomError(
+        "Store not found or you don't have permission to update products",
+        404,
+        "STORE_NOT_FOUND"
+      );
+    }
+
+    const product = await this.productRepository.findOne({
+      where: { id: productId, storeId },
+      relations: ["images"],
+    });
+
+    if (!product) {
+      throw new CustomError("Product not found", 404, "PRODUCT_NOT_FOUND");
+    }
+
+    if (updateData.name !== undefined) {
+      product.name = updateData.name;
+    }
+    if (updateData.description !== undefined) {
+      product.description = updateData.description;
+    }
+    if (updateData.price !== undefined) {
+      product.price = updateData.price;
+    }
+    if (updateData.stock !== undefined) {
+      product.stock = updateData.stock;
+    }
+    if (updateData.size !== undefined) {
+      product.size = updateData.size;
+    }
+
+    if (updateData.images !== undefined && updateData.images.length > 0) {
+      await this.productImageRepository.delete({ productId: product.id });
+
+      for (const img of updateData.images) {
+        const productImage = this.productImageRepository.create({
+          productId: product.id,
+          imageName: img.imageName,
+          isPrimary: img.isPrimary,
+          createdBy: userId,
+        });
+        await this.productImageRepository.save(productImage);
+      }
+    }
+
+    product.updatedBy = userId;
+
+    const updatedProduct = await this.productRepository.save(product);
+
+    const productWithImages = await this.productRepository.findOne({
+      where: { id: updatedProduct.id },
+      relations: ["images"],
+    });
+
+    if (!productWithImages) {
+      throw new CustomError(
+        "Failed to retrieve updated product",
+        500,
+        "PRODUCT_RETRIEVAL_FAILED"
+      );
+    }
+
+    return productWithImages;
+  }
 }

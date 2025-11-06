@@ -39,4 +39,9 @@ export const env = {
   REDIS_PORT: Number(required("REDIS_PORT")),
   REDIS_TLS: required("REDIS_TLS"),
   REDIS_MAX_RETRY_DELAY_MS: Number(required("REDIS_MAX_RETRY_DELAY_MS")),
+
+  AWS_REGION: required("AWS_REGION"),
+  AWS_S3_BUCKET_NAME: required("AWS_S3_BUCKET_NAME"),
+  AWS_ACCESS_KEY_ID: required("AWS_ACCESS_KEY_ID"),
+  AWS_SECRET_ACCESS_KEY: required("AWS_SECRET_ACCESS_KEY"),
 };

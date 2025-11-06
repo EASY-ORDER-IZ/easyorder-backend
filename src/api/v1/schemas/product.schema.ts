@@ -10,13 +10,10 @@ const productImageSchema = z.object({
     .string()
     .min(1, "Image name is required")
     .max(255, "Image name must not exceed 255 characters")
-    .regex(
-      /\.(jpg|jpeg|png)$/i,
-      "Image name must end with .jpg, .jpeg, or .png"
-    )
+    .regex(/\.(jpg|png)$/i, "Image name must end with .jpg, .png")
     .openapi({
       example: "tshirt-front.jpg",
-      description: "Image file name (must be .jpg, .jpeg, or .png)",
+      description: "Image file name (must be .jpg, .png)",
     }),
 
   isPrimary: z.boolean().default(false).openapi({

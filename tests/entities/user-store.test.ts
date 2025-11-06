@@ -6,6 +6,8 @@ import { Store } from "../../src/entities/Store";
 import { UserRole } from "../../src/entities/UserRole";
 import { OtpCode } from "../../src/entities/OtpCode";
 import { TestFixtures } from "../fixtures/entities.fixture";
+import { Product } from "../../src/entities/Product";
+import { ProductImage } from "../../src/entities/ProductImage";
 
 dotenv.config({
   path: path.resolve(process.cwd(), ".env.test"),
@@ -24,7 +26,7 @@ describe("User-Store Relationship Tests", () => {
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB,
-      entities: [User, Store, UserRole, OtpCode],
+      entities: [User, Store, UserRole, OtpCode, Product, ProductImage],
       synchronize: true,
       dropSchema: true,
       logging: false,

@@ -15,6 +15,7 @@ import {
 import { Store } from "./Store";
 import { ProductImage } from "./ProductImage";
 import { ProductSize } from "../constants/enums";
+import { ProductCategory } from "./ProductCategory";
 
 @Entity("products")
 @Index(["storeId", "name"])
@@ -67,4 +68,7 @@ export class Product {
 
   @OneToMany(() => ProductImage, (productImage) => productImage.product)
   images!: ProductImage[];
+
+  @OneToMany(() => ProductCategory, (pc) => pc.product)
+  categories!: ProductCategory[];
 }

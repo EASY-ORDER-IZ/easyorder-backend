@@ -22,3 +22,28 @@ export enum ProductSize {
   LARGE = "large",
   XLARGE = "xlarge",
 }
+
+export enum CategoryLevelOne {
+  MEN = "Men",
+  WOMEN = "Women",
+  KIDS = "Kids",
+}
+
+export enum CategoryLevelTwoMenWomen {
+  CASUAL = "Casual",
+  FORMAL = "Formal",
+  SPORTS = "Sports",
+}
+
+export enum CategoryLevelTwoKids {
+  BOYS = "Boys",
+  GIRLS = "Girls",
+  BABIES = "Babies",
+}
+
+export enum CategoryLevelThree {
+  SHIRTS = "Shirts",
+  T_SHIRTS = "T-shirts",
+  PANTS = "Pants",
+  SHORTS = "Shorts",
+}

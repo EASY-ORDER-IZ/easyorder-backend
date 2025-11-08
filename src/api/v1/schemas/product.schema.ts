@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
-import { ProductSize } from "../../../constants";
+import {
+  CategoryLevelOne,
+  CategoryLevelThree,
+  CategoryLevelTwoKids,
+  CategoryLevelTwoMenWomen,
+  ProductSize,
+} from "../../../constants";
 import { paginationSchema } from "./pagination.schema";
 
 extendZodWithOpenApi(z);
@@ -108,6 +114,69 @@ export const getProductByIdSchema = z
   })
   .openapi("GetProductByIdParams");
 
+export const category = z
+  .object({
+    root: z
+      .enum([
+        CategoryLevelOne.MEN,
+        CategoryLevelOne.WOMEN,
+        CategoryLevelOne.KIDS,
+      ])
+      .openapi({
+        example: CategoryLevelOne.MEN,
+        description: "Top-level product category",
+      }),
+
+    subCategory: z.string().openapi({
+      example: CategoryLevelTwoMenWomen.CASUAL,
+      description: "Second-level product category",
+    }),
+
+    productType: z
+      .enum([
+        CategoryLevelThree.SHIRTS,
+        CategoryLevelThree.T_SHIRTS,
+        CategoryLevelThree.PANTS,
+        CategoryLevelThree.SHORTS,
+      ])
+      .openapi({
+        example: CategoryLevelThree.T_SHIRTS,
+        description: "Third-level product category",
+      }),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.root === CategoryLevelOne.MEN ||
+      data.root === CategoryLevelOne.WOMEN
+    ) {
+      if (
+        !Object.values(CategoryLevelTwoMenWomen).includes(
+          data.subCategory as CategoryLevelTwoMenWomen
+        )
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `For ${data.root} category, the second category must be one of: Casual, Formal, Sports`,
+          path: ["subCategory"],
+        });
+      }
+    }
+
+    if (data.root === CategoryLevelOne.KIDS) {
+      if (
+        !Object.values(CategoryLevelTwoKids).includes(
+          data.subCategory as CategoryLevelTwoKids
+        )
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `For Kids category, the second category must be one of: Boys, Girls, Babies`,
+          path: ["subCategory"],
+        });
+      }
+    }
+  });
+
 export const filterProductsSchema = z
   .object({
     name: z
@@ -140,7 +209,6 @@ export const filterProductsSchema = z
       ])
       .transform((val) => (Array.isArray(val) ? val : [val]))
       .optional()
-
       .openapi({
         example: [ProductSize.SMALL, ProductSize.MEDIUM],
         description: "Filter by one or more sizes (optional)",
@@ -168,6 +236,68 @@ export const filterProductsSchema = z
       .refine((val) => !isNaN(val) && val > 0, {
         message: "Price must be a positive number",
       })
+      .optional(),
+
+    root: z
+      .union([
+        z.enum([
+          CategoryLevelOne.MEN,
+          CategoryLevelOne.WOMEN,
+          CategoryLevelOne.KIDS,
+        ]),
+        z.array(
+          z.enum([
+            CategoryLevelOne.MEN,
+            CategoryLevelOne.WOMEN,
+            CategoryLevelOne.KIDS,
+          ])
+        ),
+      ])
+      .transform((val) => (Array.isArray(val) ? val : [val]))
+      .optional(),
+
+    subCategory: z
+      .union([
+        z.enum([
+          CategoryLevelTwoMenWomen.CASUAL,
+          CategoryLevelTwoMenWomen.FORMAL,
+          CategoryLevelTwoMenWomen.SPORTS,
+          CategoryLevelTwoKids.BOYS,
+          CategoryLevelTwoKids.GIRLS,
+          CategoryLevelTwoKids.BABIES,
+        ]),
+        z.array(
+          z.enum([
+            CategoryLevelTwoMenWomen.CASUAL,
+            CategoryLevelTwoMenWomen.FORMAL,
+            CategoryLevelTwoMenWomen.SPORTS,
+            CategoryLevelTwoKids.BOYS,
+            CategoryLevelTwoKids.GIRLS,
+            CategoryLevelTwoKids.BABIES,
+          ])
+        ),
+      ])
+      .transform((val) => (Array.isArray(val) ? val : [val]))
+      .optional(),
+
+    productType: z
+      .union([
+        z.enum([
+          CategoryLevelThree.SHIRTS,
+          CategoryLevelThree.T_SHIRTS,
+          CategoryLevelThree.PANTS,
+          CategoryLevelThree.SHORTS,
+        ]),
+        z.array(
+          z.enum([
+            CategoryLevelThree.SHIRTS,
+            CategoryLevelThree.T_SHIRTS,
+            CategoryLevelThree.PANTS,
+            CategoryLevelThree.SHORTS,
+          ])
+        ),
+      ])
+      .transform((val) => (Array.isArray(val) ? val : [val]))
       .optional(),
 
     sortBy: z
@@ -210,6 +340,51 @@ export const filterProductAndPaginationSchema = filterProductsSchema
           path: ["maxPrice"],
         });
       }
+    }
+
+    const menWomenSubs = Object.values(CategoryLevelTwoMenWomen);
+    const kidsSubs = Object.values(CategoryLevelTwoKids);
+
+    const roots = data.root ?? [];
+    const subs = data.subCategory ?? [];
+
+    if (
+      subs.some((sub) => menWomenSubs.includes(sub as CategoryLevelTwoMenWomen))
+    ) {
+      const hasMenOrWomen =
+        roots.includes(CategoryLevelOne.MEN) ||
+        roots.includes(CategoryLevelOne.WOMEN);
+      if (!hasMenOrWomen) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Subcategories '${menWomenSubs.join(
+            ", "
+          )}' require root category 'MEN' or 'WOMEN'.`,
+          path: ["root"],
+        });
+      }
+    }
+
+    if (subs.some((sub) => kidsSubs.includes(sub as CategoryLevelTwoKids))) {
+      const hasKids = roots.includes(CategoryLevelOne.KIDS);
+      if (!hasKids) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Subcategories '${kidsSubs.join(
+            ", "
+          )}' require root category 'KIDS'.`,
+          path: ["root"],
+        });
+      }
+    }
+
+    if (data.productType?.length && !subs.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "You cannot specify productType without specifying a subCategory.",
+        path: ["subCategory"],
+      });
     }
   })
   .openapi("FilterProductsWithPagination");

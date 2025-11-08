@@ -1,5 +1,6 @@
 import type { ProductSize } from "../../../constants";
 import type { Product } from "../../../entities/Product";
+import type { ProductCategory } from "../../../entities/ProductCategory";
 import type { ProductImage } from "../../../entities/ProductImage";
 
 export interface ProductImageResponse {
@@ -18,6 +19,7 @@ export interface ProductResponse {
   stock: number;
   size?: ProductSize;
   images: ProductImageResponse[];
+  categories?: ProductCategory[];
   createdBy: string;
   updatedBy: string;
   createdAt: string;
@@ -58,6 +60,7 @@ export function toProductResponse(product: Product): ProductResponse {
     stock: product.stock,
     size: product.size,
     images: product.images?.map((img) => toProductImageResponse(img)) ?? [],
+    categories: product.categories ?? [],
     createdBy: product.createdBy!,
     updatedBy: product.updatedBy!,
     createdAt: product.createdAt.toISOString(),

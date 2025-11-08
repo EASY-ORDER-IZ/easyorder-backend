@@ -22,6 +22,50 @@ const productImageSchema = z.object({
   }),
 });
 
+const categoryPathSchema = z
+  .object({
+    root: z.enum(["Men", "Women", "Kids"]).openapi({
+      example: "Men",
+      description: "Root category - must be exactly: Men, Women, or Kids",
+    }),
+
+    subCategory: z
+      .enum(["Casual", "Formal", "Sports", "Boys", "Girls", "Babies"])
+      .openapi({
+        example: "Casual",
+        description:
+          "Sub-category - For Men/Women: Casual, Formal, Sports | For Kids: Boys, Girls, Babies",
+      }),
+
+    productType: z.enum(["Shirts", "T-shirts", "Pants", "Shorts"]).openapi({
+      example: "T-shirts",
+      description:
+        "Product type - must be exactly: Shirts, T-shirts, Pants, or Shorts",
+    }),
+  })
+  .superRefine((data, ctx) => {
+    const { root, subCategory } = data;
+
+    if (
+      (root === "Men" || root === "Women") &&
+      !["Casual", "Formal", "Sports"].includes(subCategory)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `For ${root}, subCategory must be: Casual, Formal, or Sports`,
+        path: ["subCategory"],
+      });
+    }
+
+    if (root === "Kids" && !["Boys", "Girls", "Babies"].includes(subCategory)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "For Kids, subCategory must be: Boys, Girls, or Babies",
+        path: ["subCategory"],
+      });
+    }
+  });
+
 export const createProductSchema = z
   .object({
     name: z
@@ -80,6 +124,21 @@ export const createProductSchema = z
       .max(10, "Maximum 10 images allowed")
       .openapi({
         description: "Array of product images",
+      }),
+
+    categories: z
+      .array(categoryPathSchema)
+      .min(1, "At least one category is required")
+      .openapi({
+        example: [
+          {
+            root: "Men",
+            subCategory: "Casual",
+            productType: "T-shirts",
+          },
+        ],
+        description:
+          "Array of category paths - only valid combinations accepted",
       }),
   })
   .refine(

@@ -123,7 +123,13 @@ export class ProductService {
         id: productId,
         deletedAt: IsNull(),
       },
-      relations: ["images", "store"],
+      relations: {
+        images: true,
+        store: true,
+        categories: {
+          category: true,
+        },
+      },
     });
 
     if (!product) {

@@ -176,6 +176,9 @@ export class ProductService {
       price,
       minPrice,
       maxPrice,
+      root,
+      subCategory,
+      productType,
       sortBy,
       sortOrder,
       page = 1,
@@ -194,10 +197,12 @@ export class ProductService {
       );
     }
 
-    const qb = this.productRepository
-      .createQueryBuilder("product")
-      .leftJoinAndSelect("product.images", "images")
-      .where("product.storeId = :storeId", { storeId });
+     const qb = this.productRepository
+    .createQueryBuilder("product")
+    .leftJoinAndSelect("product.images", "images")
+    .leftJoin("product_category", "pc", "pc.product_id = product.id")
+    .leftJoin("category", "c", "c.id = pc.category_id")
+    .where("product.storeId = :storeId", { storeId });
 
     if (name !== undefined && name !== null) {
       qb.andWhere("LOWER(product.name) LIKE :name", {
@@ -215,6 +220,28 @@ export class ProductService {
     }
     if (maxPrice !== undefined && maxPrice !== null) {
       qb.andWhere("product.price <= :maxPrice", { maxPrice });
+    }
+
+    if (root?.length || subCategory?.length || productType?.length) {
+      const conditions: string[] = [];
+      const params: Record<string, any> = {};
+
+      if (root?.length) {
+        conditions.push("c.root IN (:...roots)");
+        params.roots = root;
+      }
+
+      if (subCategory?.length) {
+        conditions.push("c.subCategory IN (:...subCategories)");
+        params.subCategories = subCategory;
+      }
+
+      if (productType?.length) {
+        conditions.push("c.productType IN (:...productTypes)");
+        params.productTypes = productType;
+      }
+
+      qb.andWhere(conditions.join(" AND "), params);
     }
 
     const orderBy = sortBy;

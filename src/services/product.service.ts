@@ -215,8 +215,8 @@ export class ProductService {
       root,
       subCategory,
       productType,
-      sortBy,
-      sortOrder,
+      sortBy = "createdAt",
+      sortOrder = "desc",
       page = 1,
       limit = 10,
     } = query;
@@ -233,62 +233,86 @@ export class ProductService {
       );
     }
 
-     const qb = this.productRepository
-    .createQueryBuilder("product")
-    .leftJoinAndSelect("product.images", "images")
-    .leftJoin("product_category", "pc", "pc.product_id = product.id")
-    .leftJoin("category", "c", "c.id = pc.category_id")
-    .where("product.storeId = :storeId", { storeId });
+    const qb = this.productRepository
+      .createQueryBuilder("product")
+      .leftJoinAndSelect("product.images", "images")
+      .leftJoinAndSelect("product.categories", "pc")
+      .leftJoinAndSelect("pc.category", "leaf")
+      .where("product.storeId = :storeId", { storeId })
+      .andWhere("product.deletedAt IS NULL");
 
-    if (name !== undefined && name !== null) {
+    if (name) {
       qb.andWhere("LOWER(product.name) LIKE :name", {
         name: `%${name.toLowerCase()}%`,
       });
     }
-    if (size && size.length > 0) {
+    if (size && size.length) {
       qb.andWhere("product.size IN (:...sizes)", { sizes: size });
     }
-    if (price !== undefined && price !== null) {
+    if (price !== undefined) {
       qb.andWhere("product.price = :price", { price });
     }
-    if (minPrice !== undefined && minPrice !== null) {
+    if (minPrice !== undefined) {
       qb.andWhere("product.price >= :minPrice", { minPrice });
     }
-    if (maxPrice !== undefined && maxPrice !== null) {
+    if (maxPrice !== undefined) {
       qb.andWhere("product.price <= :maxPrice", { maxPrice });
     }
 
     if (root?.length || subCategory?.length || productType?.length) {
-      const conditions: string[] = [];
-      const params: Record<string, any> = {};
+      qb.leftJoin("categories", "subCat", "subCat.id = leaf.parentId").leftJoin(
+        "categories",
+        "rootCat",
+        "rootCat.id = subCat.parentId"
+      );
 
       if (root?.length) {
-        conditions.push("c.root IN (:...roots)");
-        params.roots = root;
+        qb.andWhere("rootCat.name IN (:...roots)", { roots: root });
       }
-
       if (subCategory?.length) {
-        conditions.push("c.subCategory IN (:...subCategories)");
-        params.subCategories = subCategory;
+        qb.andWhere("subCat.name IN (:...subCategories)", {
+          subCategories: subCategory,
+        });
       }
-
       if (productType?.length) {
-        conditions.push("c.productType IN (:...productTypes)");
-        params.productTypes = productType;
+        qb.andWhere("leaf.name IN (:...productTypes)", {
+          productTypes: productType,
+        });
       }
-
-      qb.andWhere(conditions.join(" AND "), params);
     }
 
-    const orderBy = sortBy;
-    const orderDirection = sortOrder === "asc" ? "ASC" : "DESC";
-    qb.orderBy(`product.${orderBy}`, orderDirection);
+    qb.orderBy(`product.${sortBy}`, sortOrder.toUpperCase() as "ASC" | "DESC");
 
     const take = Number(limit);
     const skip = (Number(page) - 1) * take;
     qb.skip(skip).take(take);
 
     const [products, total] = await qb.getManyAndCount();
+
+    for (const product of products) {
+      product.categories = await Promise.all(
+        product.categories.map(async (pc) => {
+          const hierarchy: Category[] = [];
+          let current: Category | null = pc.category;
+
+          while (current) {
+            hierarchy.unshift(current);
+            if (current.parentId) {
+              current = await this.categoryRepository.findOne({
+                where: { id: current.parentId },
+              });
+            } else {
+              current = null;
+            }
+          }
+
+          (pc as any).categoryHierarchy = hierarchy; // optional: attach hierarchy
+          return pc;
+        })
+      );
+
+      product.images = product.images.filter((img) => !img.deletedAt);
+    }
 
     logger.debug(
       `Fetched ${products.length} products for store ${storeId} (page ${page}/${Math.ceil(

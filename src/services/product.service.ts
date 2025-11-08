@@ -9,11 +9,22 @@ import type {
 } from "../api/v1/schemas/product.schema";
 import { CustomError } from "../utils/custom-error";
 import logger from "../configs/logger";
+import { Category } from "../entities/Category";
+import { ProductCategory } from "../entities/ProductCategory";
+
+type CategoryPath = {
+  root: string;
+  subCategory: string;
+  productType: string;
+};
 
 export class ProductService {
   private productRepository = AppDataSource.getRepository(Product);
   private productImageRepository = AppDataSource.getRepository(ProductImage);
   private storeRepository = AppDataSource.getRepository(Store);
+  private categoryRepository = AppDataSource.getRepository(Category);
+  private productCategoryRepository =
+    AppDataSource.getRepository(ProductCategory);
 
   async createProduct(
     storeId: string,
@@ -30,6 +41,13 @@ export class ProductService {
         404,
         "STORE_NOT_FOUND"
       );
+    }
+
+    const categoryIds: string[] = [];
+
+    for (const categoryPath of productData.categories) {
+      const categoryId = await this.resolveCategoryPath(categoryPath);
+      categoryIds.push(categoryId);
     }
 
     const product = this.productRepository.create({
@@ -62,13 +80,25 @@ export class ProductService {
       `Created ${productData.images.length} images for product ${savedProduct.id}`
     );
 
-    const productWithImages = await this.productRepository.findOne({
-      // here
+    for (const categoryId of categoryIds) {
+      const productCategory = this.productCategoryRepository.create({
+        productId: savedProduct.id,
+        categoryId: categoryId,
+      });
+
+      await this.productCategoryRepository.save(productCategory);
+    }
+
+    logger.info(
+      `Assigned ${categoryIds.length} categories to product ${savedProduct.id}`
+    );
+
+    const productWithRelations = await this.productRepository.findOne({
       where: { id: savedProduct.id },
-      relations: ["images"],
+      relations: ["images", "categories", "categories.category"],
     });
 
-    if (!productWithImages) {
+    if (!productWithRelations) {
       throw new CustomError(
         "Failed to retrieve created product",
         500,
@@ -76,7 +106,7 @@ export class ProductService {
       );
     }
 
-    return productWithImages;
+    return productWithRelations;
   }
 
   async getProductById(
@@ -319,5 +349,47 @@ export class ProductService {
     }
 
     return productWithImages;
+  }
+
+  private async resolveCategoryPath(path: CategoryPath): Promise<string> {
+    const { root, subCategory, productType } = path;
+
+    const rootCategory = await this.categoryRepository.findOne({
+      where: { name: root, parentId: IsNull() },
+    });
+
+    if (!rootCategory) {
+      throw new CustomError(
+        `Root category "${root}" not found. Valid options: Men, Women, Kids`,
+        400,
+        "INVALID_ROOT_CATEGORY"
+      );
+    }
+
+    const subCategoryEntity = await this.categoryRepository.findOne({
+      where: { name: subCategory, parentId: rootCategory.id },
+    });
+
+    if (!subCategoryEntity) {
+      throw new CustomError(
+        `Sub-category "${subCategory}" not found under "${root}"`,
+        400,
+        "INVALID_SUB_CATEGORY"
+      );
+    }
+
+    const productTypeEntity = await this.categoryRepository.findOne({
+      where: { name: productType, parentId: subCategoryEntity.id },
+    });
+
+    if (!productTypeEntity) {
+      throw new CustomError(
+        `Product type "${productType}" not found under "${root} > ${subCategory}"`,
+        400,
+        "INVALID_PRODUCT_TYPE"
+      );
+    }
+
+    return productTypeEntity.id;
   }
 }

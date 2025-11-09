@@ -18,6 +18,10 @@ type CategoryPath = {
   productType: string;
 };
 
+interface ProductCategoryWithHierarchy extends ProductCategory {
+  categoryHierarchy: Category[];
+}
+
 export class ProductService {
   private productRepository = AppDataSource.getRepository(Product);
   private productImageRepository = AppDataSource.getRepository(ProductImage);
@@ -241,7 +245,7 @@ export class ProductService {
       .where("product.storeId = :storeId", { storeId })
       .andWhere("product.deletedAt IS NULL");
 
-    if (name) {
+    if (name !== undefined && name.trim() !== "") {
       qb.andWhere("LOWER(product.name) LIKE :name", {
         name: `%${name.toLowerCase()}%`,
       });
@@ -259,22 +263,29 @@ export class ProductService {
       qb.andWhere("product.price <= :maxPrice", { maxPrice });
     }
 
-    if (root?.length || subCategory?.length || productType?.length) {
+    if (
+      root !== null ||
+      root !== undefined ||
+      subCategory !== null ||
+      subCategory !== undefined ||
+      productType !== null ||
+      productType !== undefined
+    ) {
       qb.leftJoin("categories", "subCat", "subCat.id = leaf.parentId").leftJoin(
         "categories",
         "rootCat",
         "rootCat.id = subCat.parentId"
       );
 
-      if (root?.length) {
+      if (root !== null || root !== undefined) {
         qb.andWhere("rootCat.name IN (:...roots)", { roots: root });
       }
-      if (subCategory?.length) {
+      if (subCategory !== null || subCategory !== undefined) {
         qb.andWhere("subCat.name IN (:...subCategories)", {
           subCategories: subCategory,
         });
       }
-      if (productType?.length) {
+      if (productType !== null || productType !== undefined) {
         qb.andWhere("leaf.name IN (:...productTypes)", {
           productTypes: productType,
         });
@@ -297,7 +308,7 @@ export class ProductService {
 
           while (current) {
             hierarchy.unshift(current);
-            if (current.parentId) {
+            if (current !== null || current !== undefined) {
               current = await this.categoryRepository.findOne({
                 where: { id: current.parentId },
               });
@@ -306,8 +317,10 @@ export class ProductService {
             }
           }
 
-          (pc as any).categoryHierarchy = hierarchy; // optional: attach hierarchy
-          return pc;
+          return {
+            ...pc,
+            categoryHierarchy: hierarchy,
+          } as ProductCategoryWithHierarchy;
         })
       );
 

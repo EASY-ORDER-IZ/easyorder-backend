@@ -437,7 +437,10 @@ export const filterProductAndPaginationSchema = filterProductsSchema
       }
     }
 
-    if (data.productType?.length && !subs.length) {
+    if (
+      (data.productType !== null || data.productType !== undefined) &&
+      !subs.length
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message:

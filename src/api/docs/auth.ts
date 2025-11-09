@@ -13,7 +13,7 @@ import {
 
 const authPath = "/api/v1/auth";
 
-export const registerAuthDocs = (registry: OpenAPIRegistry): void => {
+export const AuthDocs = (registry: OpenAPIRegistry): void => {
   registry.register("RegisterRequest", registerSchema);
   registry.register("LoginRequest", loginSchema);
   registry.register("VerifyOtpRequest", verifyOtpSchema);

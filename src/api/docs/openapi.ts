@@ -1,6 +1,7 @@
 import { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 
-import { registerAuthDocs } from "./auth";
+import { AuthDocs } from "./auth";
+import { ProductDocs } from "./products";
 export const registry = new OpenAPIRegistry();
 
 registry.registerComponent("securitySchemes", "bearerAuth", {
@@ -9,4 +10,5 @@ registry.registerComponent("securitySchemes", "bearerAuth", {
   bearerFormat: "JWT",
 });
 
-registerAuthDocs(registry);
+AuthDocs(registry);
+ProductDocs(registry);

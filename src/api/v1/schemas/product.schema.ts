@@ -461,6 +461,166 @@ export const productIdParamSchema = z
   })
   .openapi("ProductIdParam");
 
+export const productImageResponseSchema = z
+  .object({
+    id: z.string().uuid().openapi({
+      example: "1e9b4a3b-7b0d-45c0-bf57-8d3a89d41d33",
+      description: "Unique identifier of the product image",
+    }),
+    imageName: z.string().openapi({
+      example: "tshirt_front.jpg",
+      description: "Name or filename of the image",
+    }),
+    isPrimary: z.boolean().openapi({
+      example: true,
+      description: "Indicates if this is the primary image of the product",
+    }),
+    createdAt: z.string().datetime().openapi({
+      example: "2025-11-09T11:23:45.000Z",
+      description: "When the image was created",
+    }),
+  })
+  .openapi("ProductImageResponse");
+
+export const productCategorySchema = z
+  .object({
+    id: z.string().uuid().openapi({
+      example: "2a4c2b9b-1bcd-42c7-9f33-7de8e3195e4b",
+      description: "Unique identifier of the category link",
+    }),
+    category: z
+      .object({
+        id: z.string().uuid().openapi({
+          example: "a1b2c3d4-e5f6-7890-abcd-1234567890ef",
+          description: "Unique identifier of the category",
+        }),
+        name: z.string().openapi({
+          example: "T-shirts",
+          description: "Category name",
+        }),
+      })
+      .openapi("Category"),
+  })
+  .openapi("ProductCategory");
+
+export const productResponseSchema = z
+  .object({
+    id: z.string().uuid().openapi({
+      example: "550e8400-e29b-41d4-a716-446655440000",
+      description: "Product unique ID",
+    }),
+    storeId: z.string().uuid().openapi({
+      example: "b2e1c1e2-1a9d-4a20-b3e2-4d63b00f203f",
+      description: "ID of the store that owns the product",
+    }),
+    name: z.string().openapi({
+      example: "Classic T-Shirt",
+      description: "Product name",
+    }),
+    description: z.string().optional().openapi({
+      example: "Comfortable 100% cotton T-shirt perfect for everyday wear",
+      description: "Product description",
+    }),
+    price: z.number().openapi({
+      example: 29.99,
+      description: "Product price in dollars",
+    }),
+    stock: z.number().int().openapi({
+      example: 100,
+      description: "Number of available units in stock",
+    }),
+    size: z
+      .enum([
+        ProductSize.XSMALL,
+        ProductSize.SMALL,
+        ProductSize.MEDIUM,
+        ProductSize.LARGE,
+        ProductSize.XLARGE,
+      ])
+      .optional()
+      .openapi({
+        example: ProductSize.MEDIUM,
+        description: "Product size (optional)",
+      }),
+    images: z.array(productImageResponseSchema).openapi({
+      description: "List of product images",
+    }),
+    categories: z.array(productCategorySchema).optional().openapi({
+      description: "Categories associated with the product",
+    }),
+    createdBy: z.string().uuid().openapi({
+      example: "c31f6f54-7c31-4d8a-9409-9d2c0eb2a6c3",
+      description: "User ID who created the product",
+    }),
+    updatedBy: z.string().uuid().openapi({
+      example: "c31f6f54-7c31-4d8a-9409-9d2c0eb2a6c3",
+      description: "User ID who last updated the product",
+    }),
+    createdAt: z.string().datetime().openapi({
+      example: "2025-11-09T11:23:45.000Z",
+      description: "Date the product was created",
+    }),
+    updatedAt: z.string().datetime().openapi({
+      example: "2025-11-09T11:23:45.000Z",
+      description: "Date the product was last updated",
+    }),
+  })
+  .openapi("ProductResponse");
+
+export const getProductSuccessResponseSchema = z
+  .object({
+    data: productResponseSchema,
+  })
+  .openapi("GetProductSuccessResponse");
+
+export const createProductSuccessResponseSchema = z
+  .object({
+    data: productResponseSchema,
+  })
+  .openapi("CreateProductSuccessResponse");
+
+export const deleteProductResponseSchema = z
+  .object({
+    message: z.string().openapi({
+      example: "Product deleted successfully",
+      description: "Confirmation message after product deletion",
+    }),
+    data: z
+      .object({
+        productId: z.string().uuid(),
+        deletedAt: z.string().openapi({
+          example: "2025-11-09T11:23:45.000Z",
+          description: "Timestamp when the product was deleted",
+        }),
+      })
+      .openapi({
+        description: "Details of the deleted product",
+      }),
+  })
+  .openapi("DeleteProductResponse");
+
+export const getAllProductsResponseSchema = z
+  .object({
+    data: z.object({
+      products: z.array(getProductSuccessResponseSchema.shape.data),
+      pagination: z.object({
+        page: z.number(),
+        limit: z.number(),
+        total: z.number(),
+        totalPages: z.number(),
+      }),
+    }),
+  })
+  .openapi("GetAllProductsResponse");
+
+export type ProductResponse = z.infer<typeof productResponseSchema>;
+export type CreateProductSuccessResponse = z.infer<
+  typeof createProductSuccessResponseSchema
+>;
+export type GetProductSuccessResponse = z.infer<
+  typeof getProductSuccessResponseSchema
+>;
+
 export type FilterProductsWithPagination = z.infer<
   typeof filterProductAndPaginationSchema
 >;

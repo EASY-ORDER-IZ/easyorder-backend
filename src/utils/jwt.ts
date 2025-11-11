@@ -18,13 +18,15 @@ export class JwtUtil {
     accessToken: string;
     refreshToken: string;
     refreshJti: string;
+    accessJti: string;
     refreshTtlSeconds: number;
+    accessTtlSeconds: number;
   } {
     const refreshJti = uuidv4();
-    const accessJti = uuidv4(); // new
+    const accessJti = uuidv4();
 
     const accessToken = jwt.sign(
-      { jti: accessJti, userId, role, refreshJti }, // jti added
+      { jti: accessJti, userId, role, refreshJti },
       ACCESS_TOKEN_SECRET,
       { expiresIn: ACCESS_TOKEN_TTL }
     );
@@ -39,7 +41,9 @@ export class JwtUtil {
       accessToken,
       refreshToken,
       refreshJti,
+      accessJti,
       refreshTtlSeconds: REFRESH_TOKEN_TTL_SECONDS,
+      accessTtlSeconds: ACCESS_TOKEN_TTL,
     };
   }
 

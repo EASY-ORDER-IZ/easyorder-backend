@@ -16,12 +16,15 @@ import { hashOtp, verifyOtp } from "../utils/otp-hasher";
 import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
-import { deleteRefreshToken, storeRefreshToken } from "../utils/redisToken";
+import {
+  deleteRefreshToken,
+  storeAccessToken,
+  storeRefreshToken,
+} from "../utils/redisToken";
 import { JwtUtil } from "../utils/jwt";
 import type { UserProfileResponse } from "../api/v1/responses/auth.response";
-import { loginResponseSchema } from "../api/v1/schemas/auth.schema";
+import type { loginResponseSchema } from "../api/v1/schemas/auth.schema";
 import { AuthHelper } from "../helper/auth.helper";
-import { PasswordUtil } from "../utils/password.utils";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
@@ -510,12 +513,19 @@ export class AuthService {
       throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
     }
 
-    let userRole = await this.builder.getUserRole(user);
+    const userRole = await this.builder.getUserRole(user);
 
-    const { accessToken, refreshToken, refreshJti, refreshTtlSeconds } =
-      this.jwtUtils.generateAuthTokens(user.id, userRole);
+    const {
+      accessToken,
+      refreshToken,
+      refreshJti,
+      accessJti,
+      refreshTtlSeconds,
+      accessTtlSeconds,
+    } = this.jwtUtils.generateAuthTokens(user.id, userRole);
 
     await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
+    await storeAccessToken(accessJti, user.id, accessTtlSeconds);
 
     logger.info(`User ${user.email} logged in successfully`);
 
@@ -531,7 +541,9 @@ export class AuthService {
         },
         tokens: {
           accessToken,
+          accessTokenExpiresIn: accessTtlSeconds.toString(),
           refreshToken,
+          refreshTokenExpiresIn: refreshTtlSeconds.toString(),
         },
       },
     };

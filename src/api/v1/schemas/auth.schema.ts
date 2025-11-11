@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
+import { Role } from "../../../constants";
 
 extendZodWithOpenApi(z);
 
@@ -85,6 +86,7 @@ export const loginSchema = z
       .string()
       .email("Invalid email format")
       .trim()
+      .toLowerCase()
       .max(255, "Email must not exceed 255 characters")
       .openapi({
         example: "email@gmail.com",
@@ -94,6 +96,7 @@ export const loginSchema = z
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
+      .max(128, "Password must not exceed 128 characters")
       .trim()
       .regex(
         /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])\S+$/,
@@ -122,22 +125,27 @@ export const verifyOtpSchema = z
   })
   .openapi("VerifyOtpRequest");
 
-export const loginResponseSchema = z.object({
-  data: z.object({
-    user: z.object({
-      userId: z.string(),
-      username: z.string(),
-      email: z.string(),
-      role: z.enum(["customer", "admin"]),
-      isVerified: z.boolean(),
-      createdAt: z.string(),
+export const loginResponseSchema = z
+  .object({
+    data: z.object({
+      user: z.object({
+        userId: z.string(),
+        username: z.string(),
+        email: z.string(),
+        role: z.nativeEnum(Role),
+        isVerified: z.boolean(),
+        createdAt: z.string(),
+      }),
+      tokens: z.object({
+        accessToken: z.string(),
+        accessTokenExpiresIn: z.string(),
+        refreshToken: z.string(),
+        refreshTokenExpiresIn: z.string(),
+      }),
     }),
-    tokens: z.object({
-      accessToken: z.string(),
-      refreshToken: z.string(),
-    }),
-  }),
-});
+  })
+  .openapi("LoginResponse");
+
 export const resendOtpSchema = z
   .object({
     email: z

@@ -2,7 +2,10 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../../configs/envConfig";
 import { CustomError } from "../../utils/custom-error";
-import { isAccessTokenBlacklisted } from "../../utils/redisToken";
+import {
+  isAccessTokenBlacklisted,
+  isAccessTokenValid,
+} from "../../utils/redisToken";
 import logger from "../../configs/logger";
 
 declare module "express-serve-static-core" {
@@ -42,6 +45,11 @@ export const authenticate = async (
       role: string;
     };
     logger.debug("token verified");
+
+    const valid = await isAccessTokenValid(payload.jti);
+    if (!valid) {
+      throw new CustomError("Access token revoked", 401, "TOKEN_REVOKED");
+    }
 
     const isBlacklisted = await isAccessTokenBlacklisted(payload.jti);
     if (isBlacklisted) {

@@ -17,6 +17,7 @@ import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
 import {
+  deleteAccessToken,
   deleteRefreshToken,
   storeAccessToken,
   storeRefreshToken,
@@ -496,14 +497,21 @@ export class AuthService {
     await this.otpRepository.save(otp);
     return plainOtpCode;
   }
-  async logout(refreshToken: string): Promise<void> {
-    if (!refreshToken) {
-      logger.warn("Logout failed: no refresh token provided");
-      throw new CustomError("Refresh token is required", 400, "INVALID_INPUT");
-    }
 
-    const decoded = await this.jwtUtils.verifyRefreshToken(refreshToken);
-    await deleteRefreshToken(decoded.jti);
+  async logout(refreshToken: string, accessToken?: string): Promise<void> {
+    const refreshDecoded = await this.jwtUtils.verifyJwtToken(
+      refreshToken,
+      "refresh"
+    );
+    await deleteRefreshToken(refreshDecoded.jti);
+
+    if (accessToken) {
+      const accessDecoded = await this.jwtUtils.verifyJwtToken(
+        accessToken,
+        "access"
+      );
+      await deleteAccessToken(accessDecoded.jti);
+    }
   }
 
   async login(data: LoginRequest): Promise<loginResponseSchema> {
@@ -554,7 +562,7 @@ export class AuthService {
     refreshToken: string;
   }> {
     try {
-      const decoded = await this.jwtUtils.verifyRefreshToken(token);
+      const decoded = await this.jwtUtils.verifyJwtToken(token, "refresh");
 
       const user = await this.userRepository.findOne({
         where: { id: decoded.userId },

@@ -165,10 +165,14 @@ export class AuthController {
     next: NextFunction
   ): Promise<void> {
     const { refreshToken } = req.body as LogoutRequest;
-    try {
-      await AuthController.authService.logout(refreshToken);
+    const accessToken = req.headers.authorization?.split(" ")[1];
 
-      logger.info(`Refresh token successfully deleted: ${refreshToken}`);
+    try {
+      await AuthController.authService.logout(refreshToken, accessToken);
+
+      logger.info(
+        `Refresh token deleted (prefix): ${refreshToken.slice(0, 10)}...`
+      );
       res.status(200).json({ data: { message: "Logout successful" } });
     } catch (error) {
       next(error);

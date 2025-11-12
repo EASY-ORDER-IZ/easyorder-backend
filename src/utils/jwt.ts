@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { Role } from "../constants";
 import { env } from "../configs/envConfig";
 import { CustomError } from "./custom-error";
-import { getRefreshToken } from "./redisToken";
+import { getRefreshToken, isAccessTokenValid } from "./redisToken";
 
 const ACCESS_TOKEN_SECRET = env.JWT_SECRET;
 const REFRESH_TOKEN_SECRET = env.JWT_REFRESH_SECRET;
@@ -47,38 +47,54 @@ export class JwtUtil {
     };
   }
 
-  async verifyRefreshToken(
-    token: string
-  ): Promise<{ userId: string; role: Role; jti: string }> {
+  async verifyJwtToken(
+    token: string,
+    type: "access" | "refresh"
+  ): Promise<{ userId: string; role: Role; jti: string; exp: number }> {
     try {
-      const decoded = jwt.verify(token, REFRESH_TOKEN_SECRET) as {
-        userId: string;
-        role: Role;
-        jti: string;
-        exp: number;
-      };
+      const secret =
+        type === "access" ? ACCESS_TOKEN_SECRET : REFRESH_TOKEN_SECRET;
 
-      if (!decoded?.jti) {
-        throw new CustomError("Invalid refresh token", 401, "INVALID_TOKEN");
+      const decoded = jwt.verify(token, secret) as
+        | {
+            userId: string;
+            role: Role;
+            jti: string;
+            exp: number;
+          }
+        | undefined;
+
+      if (!decoded?.userId || !decoded?.role || !decoded?.jti) {
+        throw new CustomError("Invalid token payload", 401, "INVALID_TOKEN");
       }
 
-      const storedUserId = await getRefreshToken(decoded.jti);
-      if (storedUserId === null) {
-        throw new CustomError(
-          "Refresh token expired or invalid",
-          401,
-          "INVALID_TOKEN"
-        );
+      if (type === "refresh") {
+        const storedUserId = await getRefreshToken(decoded.jti);
+        if (!storedUserId || storedUserId !== decoded.userId) {
+          throw new CustomError(
+            "Invalid or expired refresh token",
+            401,
+            "INVALID_TOKEN"
+          );
+        }
       }
 
-      if (storedUserId !== decoded.userId) {
-        throw new CustomError("Invalid refresh token", 401, "INVALID_TOKEN");
+      if (type === "access") {
+        const valid = await isAccessTokenValid(decoded.jti);
+        if (!valid) {
+          throw new CustomError(
+            "Access token revoked or expired",
+            401,
+            "TOKEN_BLACKLISTED"
+          );
+        }
       }
 
       return {
         userId: decoded.userId,
         role: decoded.role,
         jti: decoded.jti,
+        exp: decoded.exp,
       };
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {

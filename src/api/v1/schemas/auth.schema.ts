@@ -159,10 +159,11 @@ export const resendOtpSchema = z
 export const logoutSchema = z
   .object({
     refreshToken: z.string().min(1, "Refresh token is required").openapi({
-      example: "refresh-token",
-      description: "add your refresh token",
+      example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      description: "User's refresh token to invalidate session",
     }),
   })
+  .strict()
   .openapi("LogoutRequest");
 
 export const forgotPasswordSchema = z

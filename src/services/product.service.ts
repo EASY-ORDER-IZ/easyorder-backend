@@ -18,6 +18,10 @@ type CategoryPath = {
   productType: string;
 };
 
+interface ProductCategoryWithHierarchy extends ProductCategory {
+  categoryHierarchy: Category[];
+}
+
 export class ProductService {
   private productRepository = AppDataSource.getRepository(Product);
   private productImageRepository = AppDataSource.getRepository(ProductImage);
@@ -212,8 +216,11 @@ export class ProductService {
       price,
       minPrice,
       maxPrice,
-      sortBy,
-      sortOrder,
+      root,
+      subCategory,
+      productType,
+      sortBy = "createdAt",
+      sortOrder = "desc",
       page = 1,
       limit = 10,
     } = query;
@@ -233,35 +240,92 @@ export class ProductService {
     const qb = this.productRepository
       .createQueryBuilder("product")
       .leftJoinAndSelect("product.images", "images")
-      .where("product.storeId = :storeId", { storeId });
+      .leftJoinAndSelect("product.categories", "pc")
+      .leftJoinAndSelect("pc.category", "leaf")
+      .where("product.storeId = :storeId", { storeId })
+      .andWhere("product.deletedAt IS NULL");
 
-    if (name !== undefined && name !== null) {
+    if (name !== undefined && name.trim() !== "") {
       qb.andWhere("LOWER(product.name) LIKE :name", {
         name: `%${name.toLowerCase()}%`,
       });
     }
-    if (size && size.length > 0) {
+    if (size && size.length) {
       qb.andWhere("product.size IN (:...sizes)", { sizes: size });
     }
-    if (price !== undefined && price !== null) {
+    if (price !== undefined) {
       qb.andWhere("product.price = :price", { price });
     }
-    if (minPrice !== undefined && minPrice !== null) {
+    if (minPrice !== undefined) {
       qb.andWhere("product.price >= :minPrice", { minPrice });
     }
-    if (maxPrice !== undefined && maxPrice !== null) {
+    if (maxPrice !== undefined) {
       qb.andWhere("product.price <= :maxPrice", { maxPrice });
     }
 
-    const orderBy = sortBy;
-    const orderDirection = sortOrder === "asc" ? "ASC" : "DESC";
-    qb.orderBy(`product.${orderBy}`, orderDirection);
+    if (
+      root !== null ||
+      root !== undefined ||
+      subCategory !== null ||
+      subCategory !== undefined ||
+      productType !== null ||
+      productType !== undefined
+    ) {
+      qb.leftJoin("categories", "subCat", "subCat.id = leaf.parentId").leftJoin(
+        "categories",
+        "rootCat",
+        "rootCat.id = subCat.parentId"
+      );
+
+      if (root !== null || root !== undefined) {
+        qb.andWhere("rootCat.name IN (:...roots)", { roots: root });
+      }
+      if (subCategory !== null || subCategory !== undefined) {
+        qb.andWhere("subCat.name IN (:...subCategories)", {
+          subCategories: subCategory,
+        });
+      }
+      if (productType !== null || productType !== undefined) {
+        qb.andWhere("leaf.name IN (:...productTypes)", {
+          productTypes: productType,
+        });
+      }
+    }
+
+    qb.orderBy(`product.${sortBy}`, sortOrder.toUpperCase() as "ASC" | "DESC");
 
     const take = Number(limit);
     const skip = (Number(page) - 1) * take;
     qb.skip(skip).take(take);
 
     const [products, total] = await qb.getManyAndCount();
+
+    for (const product of products) {
+      product.categories = await Promise.all(
+        product.categories.map(async (pc) => {
+          const hierarchy: Category[] = [];
+          let current: Category | null = pc.category;
+
+          while (current) {
+            hierarchy.unshift(current);
+            if (current !== null || current !== undefined) {
+              current = await this.categoryRepository.findOne({
+                where: { id: current.parentId },
+              });
+            } else {
+              current = null;
+            }
+          }
+
+          return {
+            ...pc,
+            categoryHierarchy: hierarchy,
+          } as ProductCategoryWithHierarchy;
+        })
+      );
+
+      product.images = product.images.filter((img) => !img.deletedAt);
+    }
 
     logger.debug(
       `Fetched ${products.length} products for store ${storeId} (page ${page}/${Math.ceil(

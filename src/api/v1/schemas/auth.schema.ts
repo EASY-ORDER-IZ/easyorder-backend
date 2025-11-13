@@ -42,6 +42,7 @@ export const registerSchema = z
         example: "str0ngP@ssword",
         description: "The password of the user",
       }),
+
     confirmPassword: z
       .string()
       .min(8, "Password must be at least 8 characters")

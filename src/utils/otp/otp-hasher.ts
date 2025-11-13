@@ -1,5 +1,5 @@
 import argon2 from "argon2";
-import logger from "../configs/logger";
+import logger from "../../configs/logger";
 
 export async function hashOtp(otp: string): Promise<string> {
   return await argon2.hash(otp);

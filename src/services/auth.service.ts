@@ -1,3 +1,4 @@
+import type { EntityManager } from "typeorm";
 import argon2 from "argon2";
 import { MoreThan, IsNull } from "typeorm";
 import { AppDataSource } from "../configs/database";
@@ -6,13 +7,14 @@ import { UserRole } from "../entities/UserRole";
 import { OtpCode } from "../entities/OtpCode";
 import { Store } from "../entities/Store";
 import { AccountStatus, OtpPurpose, Role } from "../constants";
+import { generateUniqueStoreName } from "../utils/store";
 import type {
   LoginRequest,
   RegisterRequest,
 } from "../api/v1/requests/auth.request";
 import { CustomError } from "../utils/custom-error";
-import { generateOtpCode, calculateOtpExpiry } from "../utils/otp-generator";
-import { hashOtp, verifyOtp } from "../utils/otp-hasher";
+import { generateOtpCode, calculateOtpExpiry } from "../utils/otp";
+import { verifyOtp } from "../utils/otp";
 import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
@@ -30,148 +32,67 @@ export class AuthService {
   private tokenGenerator = new TokenGenerator();
   private storeHelper = StoreHelper;
 
-  async register(data: RegisterRequest): Promise<{
-    userId: string;
-    username: string;
-    email: string;
-    role: Role;
-    isVerified: boolean;
-    createdAt: string;
-    store?: {
-      storeId: string;
-      storeName: string;
-      createdAt: string;
-    };
-  }> {
+  async register(data: RegisterRequest): Promise<{ user: User; role: Role }> {
     const { username, email, password, createStore, storeName } = data;
 
     const existingEmail = await this.userRepository.findOneBy({ email });
     if (existingEmail) {
       throw new CustomError("Email already registered", 409, "EMAIL_EXISTS");
     }
-    // ! transaction
-    const passwordHash = await argon2.hash(password);
-
-    const user = this.userRepository.create({
-      username,
-      email,
-      passwordHash,
-      accountStatus: AccountStatus.PENDING,
-    });
-
-    const savedUser = await this.userRepository.save(user);
 
     const role = createStore === "yes" ? Role.ADMIN : Role.CUSTOMER;
-    // ! cascade insert
-    await this.userRoleRepository.save({
-      userId: savedUser.id,
-      role,
-    });
 
-    const otpCode = await this.generateOtp(
-      savedUser.id,
-      OtpPurpose.EMAIL_VERIFICATION,
-      env.OTP_EXPIRY_MINUTES
-    );
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
     try {
-      await this.emailService.sendOtp(email, otpCode);
-      logger.info(`OTP email sent to ${email}`);
-    } catch (error) {
-      logger.error(`Failed to send email to ${email}:`, error);
-    }
-
-    let storeInfo;
-    if (createStore === "yes") {
-      try {
-        let finalStoreName: string;
-
-        if (storeName !== undefined && storeName.trim() !== "") {
-          const existingStore = await this.storeRepository.findOneBy({
-            name: storeName,
-          });
-
-          if (existingStore) {
-            throw new CustomError(
-              "Store name already exists. Please choose a different name.",
-              409,
-              "STORE_NAME_EXISTS"
-            );
-          }
-
-          finalStoreName = storeName;
-        } else {
-          finalStoreName = await this.generateUniqueStoreName(username);
-        }
-
-        const store = await this.createStoreForAdmin(
-          savedUser.id,
-          finalStoreName
-        );
-
-        storeInfo = {
-          storeId: store.id,
-          storeName: store.name,
-          createdAt: store.createdAt.toISOString(),
-        };
-
-        logger.info(`Store ${store.name} created for admin ${username}`);
-      } catch (error) {
-        logger.error(`Failed to create store for admin ${username}:`, error);
-        throw error;
-      }
-    }
-    // ! return user
-    return {
-      userId: savedUser.id,
-      username: savedUser.username,
-      email: savedUser.email,
-      role,
-      isVerified: false,
-      createdAt: savedUser.createdAt.toISOString(),
-      ...(storeInfo && { store: storeInfo }),
-    };
-  }
-
-  private async createStoreForAdmin(
-    userId: string,
-    storeName: string
-  ): Promise<Store> {
-    const store = this.storeRepository.create({
-      ownerId: userId,
-      name: storeName,
-      description: "Default store description. Update your store details.",
-      createdBy: userId,
-    });
-
-    return await this.storeRepository.save(store);
-  }
-
-  private async generateUniqueStoreName(username: string): Promise<string> {
-    let storeName = username;
-
-    const exists = await this.storeRepository.findOneBy({ name: storeName });
-
-    if (!exists) {
-      return storeName;
-    }
-
-    let isUnique = false;
-
-    while (!isUnique) {
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-      storeName = `${username}_${randomSuffix}`;
-
-      const storeExists = await this.storeRepository.findOneBy({
-        name: storeName,
+      const user = this.userRepository.create({
+        username,
+        email,
+        passwordHash: password,
+        accountStatus: AccountStatus.PENDING,
       });
 
-      if (!storeExists) {
-        isUnique = true;
+      if (createStore === "yes") {
+        await this.handleStoreCreation(
+          user,
+          storeName,
+          username,
+          queryRunner.manager
+        );
       }
-    }
 
-    return storeName;
+      const savedUser = await queryRunner.manager.save(User, user);
+
+      await queryRunner.manager.save(UserRole, {
+        userId: savedUser.id,
+        role,
+      });
+
+      const otpCode = await this.generateOtp(
+        savedUser.id,
+        OtpPurpose.EMAIL_VERIFICATION,
+        queryRunner.manager
+      );
+
+      await queryRunner.commitTransaction();
+
+      await this.emailService.sendOtp(email, otpCode);
+
+      const userWithRelations = await this.userRepository.findOne({
+        where: { id: savedUser.id },
+        relations: ["store"],
+      });
+
+      return { user: userWithRelations!, role };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      logger.error("Transaction failed, rolling back:", error);
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async verifyOtp(
@@ -289,14 +210,14 @@ export class AuthService {
       }
     );
 
-    const otpCode = await this.generateOtp(
-      user.id,
-      purpose,
-      env.OTP_EXPIRY_MINUTES
-    );
+    // const otpCode = await this.generateOtp(
+    //   user.id,
+    //   purpose,
+    //   env.OTP_EXPIRY_MINUTES
+    // );
 
     try {
-      await this.emailService.sendOtp(email, otpCode);
+      // await this.emailService.sendOtp(email, otpCode);
       logger.info(`OTP resent successfully to ${email}`);
     } catch (error) {
       logger.error(`Failed to send OTP email to ${email}:`, error);
@@ -343,7 +264,7 @@ export class AuthService {
     const otpCode = await this.generateOtp(
       user.id,
       OtpPurpose.PASSWORD_RESET,
-      env.OTP_EXPIRY_MINUTES
+      // env.OTP_EXPIRY_MINUTES
     );
 
     try {
@@ -468,23 +389,71 @@ export class AuthService {
   async generateOtp(
     userId: string,
     purpose: OtpPurpose,
-    expiryMinutes: number = env.OTP_EXPIRY_MINUTES
+    manager?: EntityManager
   ): Promise<string> {
     const plainOtpCode = generateOtpCode();
-    const expiresAt = calculateOtpExpiry(expiryMinutes);
-    const hashedOtp = await hashOtp(plainOtpCode);
+    const expiresAt = calculateOtpExpiry(OtpCode.EXPIRY_MINUTES);
 
     const otp = this.otpRepository.create({
       userId,
-      otpCode: hashedOtp,
+      otpCode: plainOtpCode,
       purpose,
       expiresAt,
       attemptCount: 0,
     });
 
-    await this.otpRepository.save(otp);
+    if (manager) {
+      await manager.save(OtpCode, otp);
+    } else {
+      await this.otpRepository.save(otp);
+    }
+
     return plainOtpCode;
   }
+
+  private async handleStoreCreation(
+    user: User,
+    storeName: string | undefined,
+    username: string,
+    manager: EntityManager
+  ): Promise<void> {
+    let finalStoreName: string;
+
+    if (storeName !== undefined && storeName.trim() !== "") {
+      const existingStore = await manager.findOneBy(Store, {
+        name: storeName,
+      });
+
+      if (existingStore) {
+        throw new CustomError(
+          "Store name already exists. Please choose a different name.",
+          409,
+          "STORE_NAME_EXISTS"
+        );
+      }
+
+      finalStoreName = storeName;
+    } else {
+      finalStoreName = await generateUniqueStoreName(
+        username,
+        this.storeRepository
+      );
+    }
+
+    const store = this.storeRepository.create({
+      name: finalStoreName,
+      description: "Default store description. Update your store details.",
+    });
+
+    store.owner = user;
+    user.store = store;
+
+    logger.info(
+      `Store ${finalStoreName} will be created for admin ${username}`
+    );
+  }
+
+
   async logout(refreshToken: string): Promise<void> {
     if (!refreshToken) {
       logger.warn("Logout failed: no refresh token provided");

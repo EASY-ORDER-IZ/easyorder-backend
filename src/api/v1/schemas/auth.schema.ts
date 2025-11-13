@@ -211,6 +211,61 @@ export const refreshTokenSchema = z
   .strict()
   .openapi("RefreshTokenRequest");
 
+export const userProfileSchema = z
+  .object({
+    userId: z.string().openapi({
+      example: "64f8b2a1e0f123456789abcd",
+      description: "Unique ID of the user",
+    }),
+
+    username: z.string().openapi({
+      example: "user_123",
+      description: "Username of the user",
+    }),
+
+    email: z.string().email().openapi({
+      example: "user@gmail.com",
+      description: "User email address",
+    }),
+
+    store: z
+      .object({
+        storeId: z.string().nullable().openapi({
+          example: "64f8b2a1e0f123456789ef01",
+          description: "Store ID if the user has a store, otherwise null",
+        }),
+        name: z.string().nullable().openapi({
+          example: "My Awesome Store",
+          description: "Store name if exists, otherwise null",
+        }),
+      })
+      .openapi({
+        description: "User's store information (nullable fields when none)",
+      }),
+
+    roles: z.array(z.nativeEnum(Role)).openapi({
+      example: [Role.CUSTOMER],
+      description: "List of roles assigned to the user",
+    }),
+
+    isVerified: z.boolean().openapi({
+      example: false,
+      description: "Whether the user email is verified",
+    }),
+
+    createdAt: z
+      .string()
+      .refine((val) => !isNaN(Date.parse(val)), {
+        message: "Invalid date format; must be an ISO date string",
+      })
+      .openapi({
+        example: new Date().toISOString(),
+        description: "Account creation timestamp (ISO string)",
+      }),
+  })
+  .openapi("UserProfileResponse");
+
+export type UserProfileResponse = z.infer<typeof userProfileSchema>;
 export type RefreshTokenRequest = z.infer<typeof refreshTokenSchema>;
 export type RegisterRequest = z.infer<typeof registerSchema>;
 export type LogoutRequest = z.infer<typeof logoutSchema>;

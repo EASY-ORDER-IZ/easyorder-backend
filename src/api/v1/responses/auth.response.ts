@@ -54,16 +54,3 @@ export interface ErrorResponse {
     details?: Array<{ message: string }>;
   };
 }
-
-export interface UserProfileResponse {
-  userId: string;
-  username: string;
-  email: string;
-  store: {
-    storeId: string | null;
-    name: string | null;
-  };
-  roles: Role[];
-  isVerified: boolean;
-  createdAt: string;
-}

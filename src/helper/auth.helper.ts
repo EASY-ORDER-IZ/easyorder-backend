@@ -1,11 +1,10 @@
 import { AppDataSource } from "../configs/database";
 import { User } from "../entities/User";
-import { LoginRequest } from "../api/v1/schemas/auth.schema";
+import type { LoginRequest } from "../api/v1/schemas/auth.schema";
 import { CustomError } from "../utils/custom-error";
 import { PasswordUtil } from "../utils/password.utils";
 import { AccountStatus, Role } from "../constants";
 import logger from "../configs/logger";
-import { deleteRefreshToken } from "../utils/redisToken";
 
 export class AuthHelper {
   private userRepository = AppDataSource.getRepository(User);
@@ -20,14 +19,12 @@ export class AuthHelper {
     });
 
     if (!user) {
-      logger.warn(
-        `User validation failed: user not found (${criteria.email || criteria.id})`
-      );
+      logger.warn(`User validation failed: user not found`);
       throw new CustomError("Invalid credentials", 401, "AUTH_FAILED");
     }
 
-    if (checkPassword) {
-      const valid = PasswordUtil.verify(user.passwordHash, checkPassword);
+    if (checkPassword !== undefined) {
+      const valid = await PasswordUtil.verify(user.passwordHash, checkPassword);
       if (!valid) {
         logger.warn(
           `User validation failed: wrong password for ${criteria.email}`

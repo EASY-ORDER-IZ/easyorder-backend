@@ -24,8 +24,10 @@ import {
   storeRefreshToken,
 } from "../utils/redisToken";
 import { JwtUtil } from "../utils/jwt";
-import type { UserProfileResponse } from "../api/v1/responses/auth.response";
-import type { loginResponseSchema } from "../api/v1/schemas/auth.schema";
+import type {
+  loginResponseSchema,
+  UserProfileResponse,
+} from "../api/v1/schemas/auth.schema";
 import { AuthHelper } from "../helper/auth.helper";
 
 export class AuthService {
@@ -506,7 +508,7 @@ export class AuthService {
     );
     await deleteRefreshToken(refreshDecoded.jti);
 
-    if (accessToken) {
+    if (accessToken !== undefined) {
       const accessDecoded = await this.jwtUtils.verifyJwtToken(
         accessToken,
         "access"
@@ -517,10 +519,6 @@ export class AuthService {
 
   async login(data: LoginRequest): Promise<loginResponseSchema> {
     const user = await this.builder.getValidUser(data);
-
-    if (!user) {
-      throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
-    }
 
     const userRole = await this.builder.getUserRole(user);
 
@@ -558,11 +556,17 @@ export class AuthService {
     };
   }
 
-  async refreshToken(token: string, accessToken?: string) {
+  async refreshToken(
+    token: string,
+    accessToken?: string
+  ): Promise<{
+    refreshToken: string;
+    accessToken: string;
+  }> {
     const decoded = await this.jwtUtils.verifyJwtToken(token, "refresh");
     const user = await this.builder.isUserValid(decoded);
 
-    if (accessToken) {
+    if (accessToken !== undefined) {
       const accessDecoded = await this.jwtUtils.verifyJwtToken(
         accessToken,
         "access"
@@ -575,9 +579,6 @@ export class AuthService {
 
     await deleteRefreshToken(decoded.jti);
 
-    if (!user) {
-      throw new CustomError("Invalid refresh attempt", 401, "INVALID_TOKEN");
-    }
     const userRole = await this.builder.getUserRole(user);
     const {
       accessToken: newAccess,

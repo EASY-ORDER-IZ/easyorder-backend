@@ -64,13 +64,22 @@ export class JwtUtil {
           }
         | undefined;
 
-      if (!decoded?.userId || !decoded?.role || !decoded?.jti) {
+      if (
+        decoded === undefined ||
+        typeof decoded.userId !== "string" ||
+        typeof decoded.role !== "string" ||
+        typeof decoded.jti !== "string"
+      ) {
         throw new CustomError("Invalid token payload", 401, "INVALID_TOKEN");
       }
 
       if (type === "refresh") {
         const storedUserId = await getRefreshToken(decoded.jti);
-        if (!storedUserId || storedUserId !== decoded.userId) {
+        if (
+          storedUserId === null ||
+          storedUserId === undefined ||
+          storedUserId !== decoded.userId
+        ) {
           throw new CustomError(
             "Invalid or expired refresh token",
             401,

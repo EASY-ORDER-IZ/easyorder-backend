@@ -204,10 +204,11 @@ export const resetPasswordSchema = z
 export const refreshTokenSchema = z
   .object({
     refreshToken: z.string().min(1, "Refresh token is required").openapi({
-      example: "refresh-token",
-      description: "Refresh token JWT",
+      example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      description: "User's refresh token to invalidate session",
     }),
   })
+  .strict()
   .openapi("RefreshTokenRequest");
 
 export type RefreshTokenRequest = z.infer<typeof refreshTokenSchema>;

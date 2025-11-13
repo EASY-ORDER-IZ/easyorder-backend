@@ -5,48 +5,63 @@ import { CustomError } from "../utils/custom-error";
 import { PasswordUtil } from "../utils/password.utils";
 import { AccountStatus, Role } from "../constants";
 import logger from "../configs/logger";
+import { deleteRefreshToken } from "../utils/redisToken";
 
 export class AuthHelper {
   private userRepository = AppDataSource.getRepository(User);
 
-  async getValidUser(data: LoginRequest): Promise<User | null> {
+  private async validateUserBase(
+    criteria: { email?: string; id?: string },
+    checkPassword?: string
+  ): Promise<User> {
     const user = await this.userRepository.findOne({
-      where: { email: data.email },
+      where: criteria,
       relations: ["userRoles"],
     });
 
     if (!user) {
       logger.warn(
-        `Login attempt failed: user not found for email ${data.email}`
+        `User validation failed: user not found (${criteria.email || criteria.id})`
       );
-
-      throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
+      throw new CustomError("Invalid credentials", 401, "AUTH_FAILED");
     }
 
-    const passwordValid = PasswordUtil.verify(user.passwordHash, data.password);
-    if (!passwordValid) {
-      logger.warn(
-        `Login attempt failed: invalid password for email ${data.email}`
-      );
-
-      throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
+    if (checkPassword) {
+      const valid = PasswordUtil.verify(user.passwordHash, checkPassword);
+      if (!valid) {
+        logger.warn(
+          `User validation failed: wrong password for ${criteria.email}`
+        );
+        throw new CustomError("Invalid email or password", 401, "AUTH_FAILED");
+      }
     }
 
     if (user.emailVerified === null) {
       logger.warn(
-        `Login attempt failed: email not verified for email ${data.email}`
+        `User validation failed: email not verified for ${user.email}`
       );
-
       throw new CustomError("Email not verified", 403, "EMAIL_NOT_VERIFIED");
     }
 
     if (user.accountStatus !== AccountStatus.ACTIVE) {
-      logger.warn(
-        `Login attempt failed: inactive account for email ${data.email}`
-      );
-
+      logger.warn(`User validation failed: inactive account for ${user.email}`);
       throw new CustomError("Account is not active", 403, "ACCOUNT_INACTIVE");
     }
+
+    return user;
+  }
+
+  async getValidUser(data: LoginRequest): Promise<User> {
+    return this.validateUserBase({ email: data.email }, data.password);
+  }
+
+  async isUserValid(decoded: {
+    userId: string;
+    role: Role;
+    jti: string;
+    exp: number;
+  }): Promise<User> {
+    const user = await this.validateUserBase({ id: decoded.userId });
     return user;
   }
 

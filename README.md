@@ -126,6 +126,31 @@ npm test
 
 These workflows ensure only **clean, tested, and properly formatted code** is merged into the main branch.
 
-```
+---
 
-```
+## 🔒 Authentication & Caching (Redis Integration)
+
+Redis serves two primary roles in our backend:
+
+1.  **Secure Authentication:** Managing **refresh tokens** and implementing an **immediate blacklist** for revoked access tokens.
+2.  **Caching:** Providing a fast key-value store for temporary application data.
+
+### ⚙️ Development Connection
+
+The `backend` service connects to the `redis-dev` container using its service name and internal port:
+
+| Variable     | Value (in `.env.dev`) | Target                  |
+| :----------- | :-------------------- | :---------------------- |
+| `REDIS_HOST` | `redis-dev`           | Docker Service Name     |
+| `REDIS_PORT` | `6379`                | Internal Container Port |
+
+The Redis client is configured with **automatic reconnection logic** (exponential backoff) to ensure high availability.
+
+### 🔑 Key Conventions
+
+All keys related to authentication follow a strict prefix convention (defined in `src/constants/redisConstants.ts`):
+
+| Purpose                       | Prefix | Example Key     | Value Stored      |
+| :---------------------------- | :----- | :-------------- | :---------------- |
+| **Refresh Tokens**            | `rt`   | `rt_<JTI_UUID>` | `USER_ID`         |
+| **Blacklist (Access Tokens)** | `bl`   | `bl_<JTI_UUID>` | `1` (placeholder) |

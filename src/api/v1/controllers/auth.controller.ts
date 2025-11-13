@@ -141,12 +141,15 @@ export class AuthController {
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    try {
-      const { refreshToken } = req.body as RefreshTokenRequest;
-      logger.info("Attempting to refresh token");
+    const { refreshToken } = req.body as RefreshTokenRequest;
+    const accessToken = req.headers.authorization?.split(" ")[1];
+    logger.info("Attempting to refresh token");
 
-      const tokens =
-        await AuthController.authService.refreshToken(refreshToken);
+    try {
+      const tokens = await AuthController.authService.refreshToken(
+        refreshToken,
+        accessToken
+      );
 
       res.status(200).json({
         data: {

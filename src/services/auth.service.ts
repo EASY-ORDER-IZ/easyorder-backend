@@ -17,6 +17,7 @@ import logger from "../configs/logger";
 import { EmailService } from "./email.service";
 import { env } from "../configs/envConfig";
 import {
+  blacklistAccessToken,
   deleteAccessToken,
   deleteRefreshToken,
   storeAccessToken,
@@ -557,57 +558,44 @@ export class AuthService {
     };
   }
 
-  async refreshToken(token: string): Promise<{
-    accessToken: string;
-    refreshToken: string;
-  }> {
-    try {
-      const decoded = await this.jwtUtils.verifyJwtToken(token, "refresh");
+  async refreshToken(token: string, accessToken?: string) {
+    const decoded = await this.jwtUtils.verifyJwtToken(token, "refresh");
+    const user = await this.builder.isUserValid(decoded);
 
-      const user = await this.userRepository.findOne({
-        where: { id: decoded.userId },
-        relations: ["userRoles"],
-      });
-
-      if (!user) {
-        await deleteRefreshToken(decoded.jti);
-        throw new CustomError("User not found", 404, "USER_NOT_FOUND");
-      }
-
-      if (user.accountStatus !== AccountStatus.ACTIVE) {
-        await deleteRefreshToken(decoded.jti);
-        throw new CustomError("Account is not active", 403, "ACCOUNT_INACTIVE");
-      }
-
-      const roles = user.userRoles.map((role) => role.role);
-      let userRole: Role;
-      if (roles.includes(Role.ADMIN)) {
-        userRole = Role.ADMIN;
-      } else {
-        userRole = Role.CUSTOMER;
-      }
-
-      const { accessToken, refreshToken, refreshJti, refreshTtlSeconds } =
-        this.jwtUtils.generateAuthTokens(user.id, userRole);
-
-      await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
-
-      logger.info(`Tokens successfully refreshed for user ID: ${user.id}`);
-      return {
+    if (accessToken) {
+      const accessDecoded = await this.jwtUtils.verifyJwtToken(
         accessToken,
-        refreshToken,
-      };
-    } catch (error) {
-      if (error instanceof CustomError) {
-        throw error;
-      }
-      logger.error("Error during token refresh:", error);
-      throw new CustomError(
-        "An unexpected error occurred during token refresh.",
-        500,
-        "REFRESH_FAILED"
+        "access"
+      );
+      await blacklistAccessToken(
+        accessDecoded.jti,
+        accessDecoded.exp - Math.floor(Date.now() / 1000)
       );
     }
+
+    await deleteRefreshToken(decoded.jti);
+
+    if (!user) {
+      throw new CustomError("Invalid refresh attempt", 401, "INVALID_TOKEN");
+    }
+    const userRole = await this.builder.getUserRole(user);
+    const {
+      accessToken: newAccess,
+      refreshToken: newRefresh,
+      refreshJti,
+      accessJti,
+      refreshTtlSeconds,
+      accessTtlSeconds,
+    } = this.jwtUtils.generateAuthTokens(user.id, userRole);
+
+    await storeRefreshToken(refreshJti, user.id, refreshTtlSeconds);
+    await storeAccessToken(accessJti, user.id, accessTtlSeconds);
+
+    logger.info(
+      `Token rotation completed for user ${user.id}: old ${decoded.jti} → new ${refreshJti}`
+    );
+
+    return { accessToken: newAccess, refreshToken: newRefresh };
   }
 
   async getProfile(userId: string): Promise<UserProfileResponse> {

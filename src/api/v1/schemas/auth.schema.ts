@@ -146,6 +146,26 @@ export const loginResponseSchema = z
   })
   .openapi("LoginResponse");
 
+export const registerResponseSchema = z
+  .object({
+    data: z.object({
+      userId: z.string(),
+      username: z.string(),
+      email: z.string(),
+      role: z.nativeEnum(Role),
+      isVerified: z.boolean(),
+      createdAt: z.string(),
+      store: z
+        .object({
+          storeId: z.string(),
+          storeName: z.string(),
+          createdAt: z.string(),
+        })
+        .optional(),
+    }),
+  })
+  .openapi("RegisterResponse");
+
 export const resendOtpSchema = z
   .object({
     email: z
@@ -275,3 +295,4 @@ export type loginResponseSchema = z.infer<typeof loginResponseSchema>;
 export type ResendOtpRequest = z.infer<typeof resendOtpSchema>;
 export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;
+export type RegisterResponse = z.infer<typeof registerResponseSchema>;

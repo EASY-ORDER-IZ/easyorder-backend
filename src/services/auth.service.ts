@@ -26,6 +26,7 @@ import {
 import { JwtUtil } from "../utils/jwt";
 import type {
   loginResponseSchema,
+  RegisterResponse,
   UserProfileResponse,
 } from "../api/v1/schemas/auth.schema";
 import { AuthHelper } from "../helper/auth.helper";
@@ -39,19 +40,7 @@ export class AuthService {
   private jwtUtils = new JwtUtil();
 
   private builder = new AuthHelper();
-  async register(data: RegisterRequest): Promise<{
-    userId: string;
-    username: string;
-    email: string;
-    role: Role;
-    isVerified: boolean;
-    createdAt: string;
-    store?: {
-      storeId: string;
-      storeName: string;
-      createdAt: string;
-    };
-  }> {
+  async register(data: RegisterRequest): Promise<RegisterResponse> {
     const { username, email, password, createStore, storeName } = data;
 
     const existingEmail = await this.userRepository.findOneBy({ email });
@@ -132,13 +121,15 @@ export class AuthService {
     }
     // ! return user
     return {
-      userId: savedUser.id,
-      username: savedUser.username,
-      email: savedUser.email,
-      role,
-      isVerified: false,
-      createdAt: savedUser.createdAt.toISOString(),
-      ...(storeInfo && { store: storeInfo }),
+      data: {
+        userId: savedUser.id,
+        username: savedUser.username,
+        email: savedUser.email,
+        role,
+        isVerified: false,
+        createdAt: savedUser.createdAt.toISOString(),
+        ...(storeInfo && { store: storeInfo }),
+      },
     };
   }
 

@@ -28,13 +28,15 @@ export class AuthController {
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    try {
-      const userData = req.body;
+    const userData = req.body;
+    logger.info("User registration started");
+    logger.debug(`Incoming user data: ${JSON.stringify(req.body)}`);
 
-      const user = await AuthController.authService.register(userData);
-      // ! error middleware handler
+    try {
+      const Register = await AuthController.authService.register(userData);
+
       res.status(201).json({
-        data: user,
+        Register,
       });
     } catch (error) {
       next(error);

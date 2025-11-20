@@ -1,7 +1,7 @@
 import { AuthService } from "../../src/services/auth.service";
 import { CustomError } from "../../src/utils/custom-error";
 import { Role, AccountStatus } from "../../src/constants";
-import type { UserProfileResponse } from "../../src/api/v1/responses/auth.response";
+import { UserProfileResponse } from "../../src/api/v1/schemas/auth.schema";
 
 interface MockUserRole {
   role: Role;

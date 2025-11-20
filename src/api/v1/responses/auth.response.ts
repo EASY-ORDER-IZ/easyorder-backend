@@ -1,20 +1,18 @@
-import type { Role } from "../../../constants";
-
-export interface RegisterResponse {
-  data: {
-    userId: string;
-    username: string;
-    email: string;
-    role: Role;
-    isVerified: boolean;
-    createdAt: string;
-    store?: {
-      storeId: string;
-      storeName: string;
-      createdAt: string;
-    };
-  };
-}
+// export interface RegisterResponse {
+//   data: {
+//     userId: string;
+//     username: string;
+//     email: string;
+//     role: Role;
+//     isVerified: boolean;
+//     createdAt: string;
+//     store?: {
+//       storeId: string;
+//       storeName: string;
+//       createdAt: string;
+//     };
+//   };
+// }
 
 export interface VerifyOtpResponse {
   data: {

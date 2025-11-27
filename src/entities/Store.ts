@@ -7,11 +7,10 @@ import {
   DeleteDateColumn,
   OneToOne,
   JoinColumn,
-  OneToMany,
+  BeforeInsert,
 } from "typeorm";
 
 import { User } from "./User";
-import { Product } from "./Product";
 
 @Entity("stores")
 export class Store {
@@ -46,6 +45,11 @@ export class Store {
   @JoinColumn({ name: "owner_id" })
   owner!: User;
 
-  @OneToMany(() => Product, (product) => product.store)
-  products!: Product[];
+  @BeforeInsert()
+  setOwnerAndCreatedBy(): void {
+    if (this.owner?.id) {
+      this.ownerId = this.owner.id;
+      this.createdBy = this.owner.id;
+    }
+  }
 }

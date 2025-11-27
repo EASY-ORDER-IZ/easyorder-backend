@@ -1,3 +1,5 @@
+import { toRegisterResponseDto } from "../responses/auth.response";
+import type { RegisterRequestType } from "../types";
 import type { Request, Response, NextFunction } from "express";
 import type { LoginRequest } from "../requests/auth.request";
 import type {
@@ -25,17 +27,20 @@ export class AuthController {
   private static authService = new AuthService();
 
   static async register(
-    req: Request,
+    req: RegisterRequestType,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
       const userData = req.body;
 
-      const user = await AuthController.authService.register(userData);
-      // ! error middleware handler
+      const { user, role } =
+        await AuthController.authService.register(userData);
+
+      const responseData = toRegisterResponseDto(user, role);
+
       res.status(201).json({
-        data: user,
+        data: responseData,
       });
     } catch (error) {
       next(error);

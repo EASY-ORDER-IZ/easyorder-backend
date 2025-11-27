@@ -7,8 +7,10 @@ import {
   DeleteDateColumn,
   OneToMany,
   OneToOne,
+  BeforeInsert,
 } from "typeorm";
 
+import argon2 from "argon2";
 import { UserRole } from "./UserRole";
 import { Store } from "./Store";
 import { OtpCode } from "./OtpCode";
@@ -57,9 +59,19 @@ export class User {
   @OneToMany(() => UserRole, (userRole) => userRole.user)
   userRoles!: UserRole[];
 
-  @OneToOne(() => Store, (store) => store.owner)
+  @OneToOne(() => Store, (store) => store.owner, {
+    cascade: true,
+    eager: false,
+  })
   store?: Store;
 
   @OneToMany(() => OtpCode, (otpCode) => otpCode.user)
   otpCodes!: OtpCode[];
+
+  @BeforeInsert()
+  async hashPasswordBeforeInsert(): Promise<void> {
+    if (this.passwordHash !== undefined && this.passwordHash !== null) {
+      this.passwordHash = await argon2.hash(this.passwordHash);
+    }
+  }
 }
